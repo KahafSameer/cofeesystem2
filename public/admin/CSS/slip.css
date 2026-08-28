@@ -1,0 +1,52 @@
+
+body {
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+        }
+        .slip-container {
+            width: 400px;
+            margin: auto;
+            border: 1px solid #000;
+            padding: 10px;
+        }
+        .slip-container .title {
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        table {
+            width: 100%;
+            margin-top: 10px;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 5px 0;
+            border-bottom: 1px solid #000;
+        }
+        th {
+            text-align: left;
+        }
+        td {
+            text-align: right;
+        }
+        td:first-child {
+            text-align: left;
+        }
+
+
+        @media print {
+            @page {
+                size: 80mm auto;
+                margin: 5mm;
+            }
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            .slip-container {
+                width: 80mm;
+                margin: 0 auto;
+                border: none;
+            }
+        }
