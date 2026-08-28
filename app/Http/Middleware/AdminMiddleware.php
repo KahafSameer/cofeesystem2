@@ -20,7 +20,7 @@ class AdminMiddleware
         if(!empty(Auth::user())){//before login
 
 
-            if(Auth::user()->role == 'admin' || Auth::user()->role == 'chef' || Auth::user()->role == 'cashier'){
+            if(Auth::user()->role == 'admin' || Auth::user()->role == 'chef' || Auth::user()->role == 'cashier' || Auth::user()->role == 'waiter'){
                 if($request->route()->getName() == 'userRegister' || $request->route()->getName() == 'userLogin'){
                     abort(404);
                 }

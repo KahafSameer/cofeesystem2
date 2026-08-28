@@ -150,7 +150,12 @@ class OrderController extends Controller
 
         $selectedCategoryId = $request->query('categoryId');
 
-        $orderCode = $request->query('orderCode', $request->session()->get('orderCode', 'N/A'));
+        $orderCode = $request->query('orderCode', $request->session()->get('orderCode'));
+
+        if (empty($orderCode) || $orderCode === 'N/A') {
+            $orderCode = 'ORD-' . now()->format('YmdHis') . '-' . strtoupper(substr(uniqid(), -4));
+            $request->session()->put('orderCode', $orderCode);
+        }
 
         $productQuery = Product::query(); // Search products
 
@@ -169,7 +174,8 @@ class OrderController extends Controller
             ->where('orderCode', $orderCode)
             ->select('product_id', 'size', DB::raw('SUM(qty) as total_quantity'))
             ->groupBy('product_id', 'size')
-            ->get();
+            ->get()
+            ->keyBy(fn($item) => $item->product_id . '|' . $item->size);
 
         // dd($cartItemsCount);
 
@@ -273,20 +279,34 @@ class OrderController extends Controller
 
         // Validate the incoming request data
         $validated = $request->validate([
-            'orderCode'  => ['required', 'string', 'not_in:N/A'],
             'product_id' => ['required', 'integer', 'exists:products,id'],
             'quantity'   => ['required', 'integer', 'min:1'],
             'size'       => ['nullable', 'string'],
             'notes'      => ['nullable', 'string'],
         ]);
 
+        // Ensure a valid order code exists
+        $orderCode = $request->input('orderCode', $request->session()->get('orderCode'));
+        if (empty($orderCode) || $orderCode === 'N/A') {
+            $orderCode = 'ORD-' . now()->format('YmdHis') . '-' . strtoupper(substr(uniqid(), -4));
+            $request->session()->put('orderCode', $orderCode);
+        }
+        $validated['orderCode'] = $orderCode;
+
         $userId = Auth::id();
+
+        // If no size was selected (multiple sizes), default to the first
+        $size = $validated['size'] ?? '';
+        if (empty($size)) {
+            $firstSize = \App\Models\ProductSize::where('product_id', $validated['product_id'])->first();
+            $size = $firstSize?->size ?? 'Medium';
+        }
 
         $cartItem = Cart::firstOrNew([
             'user_id'    => $userId,
             'product_id' => $validated['product_id'],
             'orderCode'  => $validated['orderCode'],
-            'size'       => $validated['size'],
+            'size'       => $size,
         ]);
 
         // If item already exists, increment qty

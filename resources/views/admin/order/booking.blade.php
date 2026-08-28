@@ -86,13 +86,14 @@
                         @foreach ($productbyCategory as $item)
                             <div class="col-md-3 mb-3">
                                 @php
-                                    $selectedSize = $existingCart->size ?? ($item->sizes[0]->size ?? 'M');
+                                    $defaultSize = $item->sizes[0]->size ?? 'M';
+                                    $selectedSize = old('size', $defaultSize);
                                 @endphp
-                                <form action="{{ route('additems', $item->id) }}" method="POST" class="h-100 d-flex flex-column">
+                                <form action="{{ route('additems') }}" method="POST" class="h-100 d-flex flex-column">
                                     @csrf
                                     <input type="hidden" name="orderCode" class="order-code" value="{{ $orderCode }}">
                                     <input type="hidden" name="product_id" value="{{ $item->id }}">
-                                    <input type="hidden" name="quantity" class="quantity-input" value="{{ $cartItemsCount[$item->id] ?? 0 }}">
+                                    <input type="hidden" name="quantity" class="quantity-input" value="1">
                                     <input type="hidden" name="notes" id="noteInput_{{ $item->id }}">
 
                                         @if(count($item->sizes) === 1)
@@ -121,7 +122,7 @@
 
                                                 <!-- Quantity Display -->
                                                 <input type="text" class="form-control text-center qty" name="quantity_display"
-                                                    value="{{ $existingCart->qty ?? 0 }}" readonly style="max-width: 40px;">
+                                                    value="1" readonly style="max-width: 40px;">
 
                                                 <!-- Plus Button -->
                                                 <button type="button" class="btn btn-outline-secondary btn-sm btn-plus" data-product-id="{{ $item->id }}">

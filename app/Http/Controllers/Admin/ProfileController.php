@@ -129,7 +129,7 @@ class ProfileController extends Controller
         $users = $query->get();
 
         // $users = User::where('role','!=','user')->get();
-        $roles = ['admin', 'cashier', 'chef'];
+        $roles = ['admin', 'cashier', 'chef', 'waiter'];
 
         // dd($users->toArray());
 

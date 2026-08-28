@@ -20,6 +20,7 @@
                                     <option value="admin">Admin</option>
                                     <option value="cashier">Cashier</option>
                                     <option value="chef">Chef</option>
+                                    <option value="waiter">Waiter</option>
                                 </select>
                             </div>
                             <div class="mb-3">
