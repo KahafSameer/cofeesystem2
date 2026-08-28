@@ -11,6 +11,7 @@ class Asset extends Model
         'name',
         'asset_category_id',
         'assigned_user_id',
+        'branch_id',
         'purchase_date',
         'purchase_value',
         'depreciation_rate',
@@ -29,5 +30,10 @@ class Asset extends Model
     public function assignedUser()
     {
         return $this->belongsTo(User::class, 'assigned_user_id');
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
     }
 }

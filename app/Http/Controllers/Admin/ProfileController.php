@@ -2,10 +2,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Branch;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 class ProfileController extends Controller
 {
@@ -79,19 +81,28 @@ class ProfileController extends Controller
     //Create New User
     public function createNewUser()
     {
-        return view('admin.profile.createprofile');
+        $branches = Branch::where('status', 'Active')->orderBy('name')->get();
+        return view('admin.profile.createprofile', compact('branches'));
     }
 
     public function addNewUser(Request $request)
     {
         // dd($request->all());
 
+        $rolesRequiringBranch = ['cashier', 'chef', 'waiter'];
+        $selectedRole = $request->input('profile');
+
         $validated = $request->validate([
-            'name'            => 'required',
+            'name'            => 'required|string|max:255',
             'email'           => 'required|email|unique:users,email',
             'password'        => 'required|min:8',
             'confirmpassword' => 'required|same:password',
-            'profile'         => 'required',
+            'profile'         => 'required|in:admin,cashier,chef,waiter',
+            'branch_id'       => [
+                Rule::requiredIf(in_array($selectedRole, $rolesRequiringBranch)),
+                'nullable',
+                'exists:branches,id',
+            ],
         ]);
 
         $addAccount = [
@@ -101,6 +112,13 @@ class ProfileController extends Controller
             'role'     => $validated['profile'],
             'provider' => 'simple',
         ];
+
+        // Only branch-based staff get a branch_id; admin stays null
+        if (in_array($validated['profile'], $rolesRequiringBranch)) {
+            $addAccount['branch_id'] = $validated['branch_id'];
+        } else {
+            $addAccount['branch_id'] = null;
+        }
 
         User::create($addAccount);
 
@@ -117,7 +135,7 @@ class ProfileController extends Controller
 
         $searchKey = trim($request->input('searchKey'));
 
-        $query = User::select('id', 'name', 'email', 'phone', 'status', 'role')
+        $query = User::select('id', 'name', 'email', 'phone', 'status', 'role', 'branch_id')
             ->where('role', '!=', 'user')
             ->when($searchKey, function ($q) use ($searchKey) {
                 $q->where(function ($q) use ($searchKey) {
@@ -131,26 +149,68 @@ class ProfileController extends Controller
         // $users = User::where('role','!=','user')->get();
         $roles = ['admin', 'cashier', 'chef', 'waiter'];
 
+        $branches = Branch::where('status', 'Active')->orderBy('name')->get();
+
         // dd($users->toArray());
 
-        return view('admin.profile.changeprofile', compact('users', 'roles'));
+        return view('admin.profile.changeprofile', compact('users', 'roles', 'branches'));
     }
 
     public function updateField(Request $request, $id)
     {
         // dd($request->all());
 
-        $field = $request->input('field'); //eg.status
-        $value = $request->input('value'); //eg.inactive
+        $field = $request->input('field'); // e.g. status, role, branch
+        $value = $request->input('value'); // e.g. Active, cashier, 1
+
+        $user = User::findOrFail($id);
+
+        if ($field === 'branch') {
+            $request->validate([
+                'value' => ['required', 'exists:branches,id'],
+            ]);
+
+            $user->branch_id = $value;
+            $user->save();
+
+            return back()->with('alert', [
+                'type'    => 'success',
+                'message' => 'Branch updated successfully!',
+            ]);
+        }
 
         if (! in_array($field, ['role', 'status'])) {
             return back()->with('alert', [
                 'type'    => 'error',
-                'message' => 'Invaild field',
+                'message' => 'Invalid field',
             ]);
         }
 
-        $user         = User::findOrFail($id);
+        if ($field === 'status') {
+            $request->validate([
+                'value' => ['required', 'in:Active,Inactive'],
+            ]);
+        }
+
+        if ($field === 'role') {
+            $request->validate([
+                'value' => ['required', 'in:admin,cashier,chef,waiter'],
+            ]);
+
+            // Branch-based staff require a branch — warn but allow admin to fix it after
+            if (in_array($value, ['cashier', 'chef', 'waiter']) && empty($user->branch_id)) {
+                return back()->with('alert', [
+                    'type'    => 'error',
+                    'message' => 'Please assign a branch to this user before setting a branch-based role.',
+                ]);
+            }
+
+            // Admin role clears the branch
+            if (! in_array($value, ['cashier', 'chef', 'waiter'])) {
+                $user->branch_id = null;
+            }
+        }
+
         $user->$field = $value;
         $user->save();
 

@@ -28,7 +28,8 @@ class User extends Authenticatable
         'address',
         'profile',
         'role',
-        'status'
+        'status',
+        'branch_id'
     ];
 
     /**
@@ -52,6 +53,11 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
     }
 
 }

@@ -3,7 +3,11 @@
 <div class="container mt-3">
         <h2 class="fw-bold text-center">Asset Lists</h2>
          <a href="{{ route('assets.create') }}" class="btn btn-primary mb-3">Add Asset</a>
-         @if(session('success'))
+         @if(session('alert'))
+            <div class="alert alert-{{ session('alert')['type'] == 'success' ? 'success' : 'danger' }}">
+                {{ session('alert')['message'] }}
+            </div>
+        @elseif(session('success'))
             <div class="alert alert-success">{{ session('success') }}</div>
         @endif
     <table class="table table-bordered">
@@ -13,6 +17,7 @@
                     <th>Name</th>
                     <th>Category</th>
                     <th>User</th>
+                    <th>Branch</th>
                     <th>Purchase Date</th>
                     <th>Value</th>
                     <th>Status</th>
@@ -28,6 +33,7 @@
                         <td>{{ $asset->name }}</td>
                         <td>{{ $asset->category->name ?? '-' }}</td>
                         <td>{{ $asset->assignedUser->name ?? '-' }}</td>
+                        <td>{{ $asset->branch->name ?? '-' }}</td>
                         <td>{{ $asset->purchase_date }}</td>
                         <td>{{ number_format($asset->purchase_value, 0) }}</td>
                         <td>{{ $asset->status }}</td>

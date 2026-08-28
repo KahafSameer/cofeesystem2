@@ -40,6 +40,8 @@
                 <ul class="catmenu list-unstyled">
                     <li><a href="{{ route('category.list') }}" class="btn mb-2" style="background-color: #f1e797; color: black;">
                         <i class="fas fa-tags me-2"></i> Categories</a></li>
+                    <li><a href="{{ route('branch.index') }}" class="btn mb-2" style="background-color: #f1e797; color: black;">
+                        <i class="fas fa-store me-2"></i> Branches</a></li>
                     <li><a href="{{ route('product.prodlist') }}" class="btn mb-2" style="background-color: #f1e797; color: black;">
                         <i class="fas fa-boxes me-2"></i> Products</a></li>
                     <li><a href="{{ route('discountPage') }}" class="btn mb-2" style="background-color: #f1e797; color: black;">
