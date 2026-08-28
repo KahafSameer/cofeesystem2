@@ -423,6 +423,7 @@ class UserDashboardController extends Controller
                 carts.orderCode,
                 carts.product_id,
                 carts.size,
+                carts.notes,
                 SUM(carts.qty) as quantity
             ')
             ->leftJoin('products', 'carts.product_id', '=', 'products.id')
@@ -438,7 +439,7 @@ class UserDashboardController extends Controller
             ->where('carts.orderCode', $request->orderCode)
             ->groupBy('carts.orderCode', 'carts.user_id', 'carts.product_id',
                 'discounts.product_id', 'product_sizes.price',
-                'discounts.discount_percentage', 'carts.size')
+                'discounts.discount_percentage', 'carts.size', 'carts.notes')
             ->get();
 
         // dd($carts->toArray());
@@ -453,6 +454,7 @@ class UserDashboardController extends Controller
                 'payment_method' => 'card',
                 'order_type'     => 3,
                 'size'           => $cart->size,
+                'notes'          => $cart->notes,
             ]);
         }
 
