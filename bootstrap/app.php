@@ -24,7 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'user' => UserMiddleware::class,
             'waiter' => WaiterMiddleware::class,
             'chef' => ChefMiddleware::class,
-            // 'cashier' => CashierMiddleware::class
+            'cashier' => CashierMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

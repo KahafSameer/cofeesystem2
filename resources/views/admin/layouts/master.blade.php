@@ -25,8 +25,8 @@
             </a>
 
             @if (auth()->user()->role === 'cashier')
-                <a href="{{ route('bookingPage') }}" class="btn mb-2" style="background-color: #66401d; color: white;">
-                    <i class="fas fa-calendar-alt me-2"></i> Booking
+                <a href="{{ route('cashier.index') }}" class="btn mb-2" style="background-color: #66401d; color: white;">
+                    <i class="fas fa-cash-register me-2"></i> Cashier POS
                 </a>
             @endif
 
