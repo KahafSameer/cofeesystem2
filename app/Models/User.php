@@ -60,4 +60,9 @@ class User extends Authenticatable
         return $this->belongsTo(Branch::class);
     }
 
+    public function waiterOrders()
+    {
+        return $this->hasMany(Order::class, 'waiter_id');
+    }
+
 }

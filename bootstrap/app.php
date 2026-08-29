@@ -2,6 +2,7 @@
 
 use Illuminate\Foundation\Application;
 use App\Http\Middleware\ChefMiddleware;
+use App\Http\Middleware\WaiterMiddleware;
 use App\Http\Middleware\UserMiddleware;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\CashierMiddleware;
@@ -21,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware -> alias([
             'admin' =>AdminMiddleware::class,
             'user' => UserMiddleware::class,
+            'waiter' => WaiterMiddleware::class,
             // 'cashier' => CashierMiddleware::class
             //             'chef' => ChefMiddleware::class
         ]);

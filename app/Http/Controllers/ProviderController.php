@@ -37,6 +37,9 @@ public function callback($provider){
 
     // return redirect('dashboard');
 
+    if(Auth::user()->role == 'waiter'){
+        return to_route('waiter.dashboard');
+    }
     if(Auth::user()->role == 'admin' || Auth::user()->role == 'chef' || Auth::user()->role == 'cashier'){
         return to_route('adminDashboard');
     }

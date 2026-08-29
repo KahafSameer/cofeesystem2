@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\AdminDashboardController;
 require __DIR__.'/auth.php';
 require_once __DIR__.'/admin.php';
 require_once __DIR__.'/user.php';
+require_once __DIR__.'/waiter.php';
 
 
 // $user->token
