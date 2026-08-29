@@ -48,7 +48,7 @@
                     </div>
                     <!-- Summary Section -->
                     <div class="mt-4 text-end">
-                        <h5 class="fw-bold">Total: {{ number_format($orderTotal) }} MMK</h5>
+                        <h5 class="fw-bold">Total: {{ number_format($orderTotal) }} PKR</h5>
                     </div>
                 </div>
             </div>

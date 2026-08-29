@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Waiter Panel</title>
+    <title>Chef Panel</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     {{-- sweet alert  --}}
@@ -19,28 +19,24 @@
     <!-- Sidebar -->
     <div id="sidebarContainer" class="sidebar d-flex flex-column p-3 position-fixed shadow">
         @if (auth()->check())
-            <a href="{{ route('waiter.dashboard') }}" class="btn mb-2" style="background-color: #66401d; color: white;">
+            <a href="{{ route('chef.dashboard') }}" class="btn mb-2" style="background-color: #66401d; color: white;">
                 <i class="fas fa-tachometer-alt me-2"></i> Dashboard
             </a>
 
-            <a href="{{ route('waiter.newOrder') }}" class="btn mb-2" style="background-color: #66401d; color: white;">
-                <i class="fas fa-plus-circle me-2"></i> New Order
+            <a href="{{ route('chef.newOrders') }}" class="btn mb-2" style="background-color: #66401d; color: white;">
+                <i class="fas fa-list-alt me-2"></i> New Orders
             </a>
 
-            <a href="{{ route('waiter.currentOrders') }}" class="btn mb-2" style="background-color: #66401d; color: white;">
-                <i class="fas fa-clipboard-list me-2"></i> Current Orders
+            <a href="{{ route('chef.preparing') }}" class="btn mb-2" style="background-color: #66401d; color: white;">
+                <i class="fas fa-fire me-2"></i> Preparing
             </a>
 
-            <a href="{{ route('waiter.sessions') }}" class="btn mb-2" style="background-color: #66401d; color: white;">
-                <i class="fas fa-receipt me-2"></i> Running Bills
+            <a href="{{ route('chef.ready') }}" class="btn mb-2" style="background-color: #66401d; color: white;">
+                <i class="fas fa-check-circle me-2"></i> Ready
             </a>
 
-            <a href="{{ route('waiter.orderHistory') }}" class="btn mb-2" style="background-color: #66401d; color: white;">
+            <a href="{{ route('chef.history') }}" class="btn mb-2" style="background-color: #66401d; color: white;">
                 <i class="fas fa-history me-2"></i> Order History
-            </a>
-
-            <a href="{{ route('waiter.profile') }}" class="btn mb-2" style="background-color: #66401d; color: white;">
-                <i class="fas fa-user me-2"></i> Profile
             </a>
 
             <form action="{{ route('logout') }}" method="POST">
@@ -53,8 +49,8 @@
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg fixed-top shadow">
         <div class="w-100 px-3 d-flex justify-content-between align-items-center">
-            <a class="navbar-brand text-light fw-bold ms-4" href="{{ route('waiter.dashboard') }}">
-                <i class="fas fa-store"></i> Waiter Panel
+            <a class="navbar-brand text-light fw-bold ms-4" href="{{ route('chef.dashboard') }}">
+                <i class="fas fa-utensils"></i> Chef Panel
             </a>
 
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
@@ -65,10 +61,10 @@
             <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
                 <ul class="navbar-nav align-items-center">
                     <li class="nav-item">
-                        <a class="nav-link text-light me-2" href="{{ route('waiter.cart') }}">
-                            <i class="fa fa-shopping-bag me-1"></i> Cart
-                            @if (($cartCount ?? 0) > 0)
-                                <span class="badge rounded-pill bg-danger">{{ $cartCount }}</span>
+                        <a class="nav-link text-light me-2" href="{{ route('chef.newOrders') }}">
+                            <i class="fa fa-list-alt me-1"></i> New Orders
+                            @if (($newOrdersCount ?? 0) > 0)
+                                <span class="badge rounded-pill bg-danger">{{ $newOrdersCount }}</span>
                             @endif
                         </a>
                     </li>
@@ -87,7 +83,6 @@
                             <li>
                                 <hr class="dropdown-divider">
                             </li>
-                            <li><a class="dropdown-item" href="{{ route('waiter.profile') }}">Profile</a></li>
                             <li>
                                 <form method="POST" action="{{ route('logout') }}">
                                     @csrf
@@ -140,21 +135,6 @@
             icon: "{{ session('alert')['type'] }}",
             confirmButtonText: 'OK'
         });
-    </script>
-@endif
-
-@if (session('kotOrderCode'))
-    <script>
-        // Automatic KOT print - fires once after a successful order submission.
-        // The flash is consumed immediately, so refreshing/viewing this page will
-        // not print again. Manual reprint is available from the order pages.
-        (function () {
-            var kotCode = @json(session('kotOrderCode'));
-            if (kotCode) {
-                var url = @json(route('kitchen.kotPrint', session('kotOrderCode')));
-                window.open(url, '_blank');
-            }
-        })();
     </script>
 @endif
 

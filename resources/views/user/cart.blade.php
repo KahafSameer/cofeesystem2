@@ -149,7 +149,7 @@
                         @csrf
                         <input type="hidden" name="orderCode" value="{{ $item->orderCode }}">
                         <button type="submit" class="btn btn-success w-100">
-                            Confirm Payment <span class="float-end" id="cart-total">{{ number_format($total, 2, '.', '') }} MMK</span>
+                            Confirm Payment <span class="float-end" id="cart-total">{{ number_format($total, 2, '.', '') }} PKR</span>
                         </button>
                     </form>
 
@@ -217,7 +217,7 @@
                     $('#subtotalAmount').text(response.subtotal.toFixed(2));
                     $('#taxAmount').text(response.taxAmount.toFixed(2));
                     $('#cart-total').text(response.total.toFixed(2));
-                    $('#confirm-payment-total').text(response.total.toFixed(2) + ' MMK');
+                    $('#confirm-payment-total').text(response.total.toFixed(2) + ' PKR');
                 } else {
                     alert("Server failed to update cart.");
                 }

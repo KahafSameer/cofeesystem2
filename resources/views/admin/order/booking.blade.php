@@ -254,7 +254,7 @@
                                         <option value="" disabled selected>Select a location</option>
                                         @foreach ($deliveryLocations as $location)
                                             <option value="{{ $location->id }}" {{ $deliveryLocationId == $location->id ? 'selected' : '' }}>
-                                                {{ $location->township }} ({{ number_format($location->fees) }} MMK)
+                                                {{ $location->township }} ({{ number_format($location->fees) }} PKR)
                                             </option>
                                         @endforeach
                                     </select>

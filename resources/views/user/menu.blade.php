@@ -95,10 +95,10 @@
                                                             @endphp
                                                             <span>
                                                                 @if ($hasDiscount)
-                                                                    <span class="text-danger fw-bold">MMK {{ $discountedPrice }}</span>
-                                                                    <del class="text-muted" style="font-size: 11px;">MMK {{ $originalPrice }}</del>
+                                                                    <span class="text-danger fw-bold">PKR {{ $discountedPrice }}</span>
+                                                                    <del class="text-muted" style="font-size: 11px;">PKR {{ $originalPrice }}</del>
                                                                 @else
-                                                                    <span class="text-dark fw-semibold">MMK {{ $originalPrice }}</span>
+                                                                    <span class="text-dark fw-semibold">PKR {{ $originalPrice }}</span>
                                                                 @endif
                                                             </span>
                                                         </div>

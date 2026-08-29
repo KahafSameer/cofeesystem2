@@ -11,7 +11,7 @@ class Order extends Model
     protected $fillable = [ 'product_id','user_id','status',
                             'order_code','quantity','totalprice',
                             'payment_method','order_type','size','notes',
-                            'delivery_location_id','waiter_id','branch_id'
+                            'delivery_location_id','waiter_id','branch_id','session_id'
                           ];
 
     public function product()
@@ -32,5 +32,10 @@ class Order extends Model
     public function branch()
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function customerSession()
+    {
+        return $this->belongsTo(CustomerSession::class, 'session_id');
     }
 }

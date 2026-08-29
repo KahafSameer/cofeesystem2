@@ -141,7 +141,7 @@
                                                     $price = round($size->price - ($size->price * $item->discount_percentage / 100), 2);
                                                 }
                                             @endphp
-                                            {{ $size->size }}: {{ number_format($price, 0) }} MMK
+                                            {{ $size->size }}: {{ number_format($price, 0) }} PKR
                                         </span>
                                     @endforeach
                                 </small>

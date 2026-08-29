@@ -29,4 +29,14 @@ Route::group(['prefix' => 'waiter', 'middleware' => ['auth', 'waiter']], functio
     Route::prefix('profile')->controller(WaiterController::class)->group(function () {
         Route::get('/', 'profile')->name('waiter.profile');
     });
+
+    // Customer Session / Running Bill
+    Route::prefix('sessions')->controller(WaiterController::class)->group(function () {
+        Route::get('/', 'sessions')->name('waiter.sessions');
+        Route::post('/', 'createSession')->name('waiter.createSession');
+        Route::get('{sessionId}/menu', 'sessionNewOrder')->name('waiter.sessionNewOrder');
+        Route::post('{sessionId}/orders', 'placeSessionOrder')->name('waiter.placeSessionOrder');
+        Route::post('{sessionId}/bill', 'requestBill')->name('waiter.requestBill');
+        Route::get('{sessionId}', 'sessionDetails')->name('waiter.sessionDetails');
+    });
 });

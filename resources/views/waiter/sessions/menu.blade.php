@@ -1,17 +1,14 @@
 @extends('waiter.layouts.master')
 @section('content')
     <section class="container my-4">
-        <h2 class="text-center text-white mb-4">New Order</h2>
+        <h2 class="text-center text-white mb-4">Add Items - Session #{{ $session->session_code }}</h2>
 
         <div class="row g-4">
             <div class="col-lg-4">
-                <!-- Cart Summary -->
+                <!-- Cart Summary (session cart) -->
                 <div class="card shadow mb-4">
-                    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <div class="card-header py-3">
                         <h5 class="mb-0 fw-bold"><i class="fa fa-shopping-bag me-2"></i>Cart</h5>
-                        <form action="{{ route('waiter.cart') }}" method="GET" class="m-0">
-                            <button class="btn btn-primary btn-sm">Review</button>
-                        </form>
                     </div>
                     <div class="card-body">
                         @if ($cartItems->isEmpty())
@@ -50,6 +47,28 @@
                                 <span>Total</span>
                                 <span>{{ number_format($total, 0) }}</span>
                             </div>
+                            <hr>
+                            <form action="{{ route('waiter.placeSessionOrder', $session) }}" method="POST">
+                                @csrf
+                                <input type="hidden" name="orderCode" value="{{ $orderCode }}">
+                                <div class="mb-2">
+                                    <label class="form-label small mb-1">Order Type</label>
+                                    <select name="orderType" class="form-select form-select-sm" required>
+                                        <option value="eat_in">Eat In</option>
+                                        <option value="take_away">Take Away</option>
+                                        <option value="delivery">Delivery</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small mb-1">Payment Method</label>
+                                    <select name="paymentMethod" class="form-select form-select-sm" required>
+                                        <option value="cash">Cash</option>
+                                        <option value="card">Card</option>
+                                        <option value="mobile">Mobile</option>
+                                    </select>
+                                </div>
+                                <button class="btn btn-success w-100"><i class="fa fa-check me-1"></i>Place Order into Session</button>
+                            </form>
                         @endif
                     </div>
                 </div>
@@ -57,7 +76,7 @@
 
             <div class="col-lg-8">
                 <!-- Search -->
-                <form action="{{ route('waiter.newOrder') }}" method="get" class="mb-3">
+                <form action="{{ route('waiter.sessionNewOrder', $session) }}" method="get" class="mb-3">
                     <div class="input-group w-50">
                         <input type="text" class="form-control" value="{{ request('searchKey') }}"
                             name="searchKey" placeholder="Search products...">
@@ -67,9 +86,9 @@
 
                 <!-- Categories -->
                 <div class="mb-3">
-                    <a href="{{ route('waiter.newOrder') }}" class="btn btn-sm {{ empty($selectedCategoryId) ? 'btn-dark' : 'btn-outline-light' }}">All</a>
+                    <a href="{{ route('waiter.sessionNewOrder', $session) }}" class="btn btn-sm {{ empty($selectedCategoryId) ? 'btn-dark' : 'btn-outline-light' }}">All</a>
                     @foreach ($categories as $cat)
-                        <a href="{{ route('waiter.newOrder', ['categoryId' => $cat->id]) }}"
+                        <a href="{{ route('waiter.sessionNewOrder', [$session, 'categoryId' => $cat->id]) }}"
                             class="btn btn-sm {{ $selectedCategoryId == $cat->id ? 'btn-dark' : 'btn-outline-light' }}">
                             {{ $cat->name }}
                         </a>
@@ -105,7 +124,6 @@
                                     @csrf
                                     <input type="hidden" name="product_id" value="{{ $item->id }}">
                                     <input type="hidden" name="orderCode" value="{{ $orderCode }}">
-                                    <input type="hidden" name="noteInput" value="">
                                     <div class="input-group input-group-sm mb-2">
                                         @if (count($item->sizes ?? []) > 0)
                                             <select name="size" class="form-select form-select-sm"

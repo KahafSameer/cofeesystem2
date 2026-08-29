@@ -23,8 +23,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' =>AdminMiddleware::class,
             'user' => UserMiddleware::class,
             'waiter' => WaiterMiddleware::class,
+            'chef' => ChefMiddleware::class,
             // 'cashier' => CashierMiddleware::class
-            //             'chef' => ChefMiddleware::class
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

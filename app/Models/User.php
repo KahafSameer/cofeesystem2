@@ -65,4 +65,9 @@ class User extends Authenticatable
         return $this->hasMany(Order::class, 'waiter_id');
     }
 
+    public function waiterSessions()
+    {
+        return $this->hasMany(CustomerSession::class, 'waiter_id');
+    }
+
 }

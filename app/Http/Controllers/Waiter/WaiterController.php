@@ -5,6 +5,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Cart;
 use App\Models\Category;
+use App\Models\CustomerSession;
 use App\Models\Discount;
 use App\Models\Order;
 use App\Models\PaymentRecord;
@@ -375,6 +376,10 @@ class WaiterController extends Controller
 
         $request->session()->forget('waiterOrderCode');
 
+        //KOT auto-print: flagged once after successful submission so the next
+        //page opens the kitchen ticket exactly once (cleared automatically).
+        session()->flash('kotOrderCode', $orderCode);
+
         return redirect()->route('waiter.currentOrders')->with('alert', [
             'type'    => 'success',
             'message' => 'Order #' . $orderCode . ' placed successfully.',
@@ -720,6 +725,9 @@ class WaiterController extends Controller
 
         $this->recomputeOrderTotal($orderCode);
 
+        //KOT auto-print: flagged once after the order update is submitted.
+        session()->flash('kotOrderCode', $orderCode);
+
         return back()->with('alert', [
             'type'    => 'success',
             'message' => 'Item added to order.',
@@ -763,6 +771,291 @@ class WaiterController extends Controller
         return back()->with('alert', [
             'type'    => 'success',
             'message' => 'Order details updated.',
+        ]);
+    }
+
+    //=== Customer Session / Running Bill ===
+
+    //Verify a session belongs to the waiter + branch (server-side ownership)
+    private function verifiableSession($sessionId)
+    {
+        $waiter = $this->waiter();
+
+        $session = CustomerSession::where('id', $sessionId)
+            ->where('waiter_id', $waiter->id)
+            ->where('branch_id', $waiter->branch_id)
+            ->first();
+
+        if (! $session) {
+            abort(404);
+        }
+
+        return $session;
+    }
+
+    //List the waiter's active (open + bill requested) sessions
+    public function sessions()
+    {
+        $waiter = $this->waiter();
+
+        $activeSessions = CustomerSession::with(['branch'])
+            ->where('waiter_id', $waiter->id)
+            ->where('branch_id', $waiter->branch_id)
+            ->whereIn('status', [CustomerSession::STATUS_OPEN, CustomerSession::STATUS_BILL_REQUESTED])
+            ->orderByDesc('opened_at')
+            ->get();
+
+        return view('waiter.sessions.index', [
+            'activeSessions' => $activeSessions,
+            'waiter'         => $waiter,
+        ]);
+    }
+
+    //Start a new session for this waiter
+    public function createSession()
+    {
+        $waiter = $this->waiter();
+
+        $session = CustomerSession::create([
+            'session_code' => 'SES-' . now()->format('ymd') . '-' . strtoupper(substr(uniqid(), -4)),
+            'waiter_id'    => $waiter->id,
+            'branch_id'    => $waiter->branch_id,
+            'status'       => CustomerSession::STATUS_OPEN,
+            'opened_at'    => now(),
+        ]);
+
+        return redirect()->route('waiter.sessionDetails', $session)->with('alert', [
+            'type'    => 'success',
+            'message' => 'Session #' . $session->session_code . ' started.',
+        ]);
+    }
+
+    //Session detail: orders (grouped), running total, status
+    public function sessionDetails($sessionId)
+    {
+        $session = $this->verifiableSession($sessionId);
+
+        $orders = Order::with(['product', 'branch'])
+            ->where('session_id', $session->id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $grouped = $orders->groupBy('order_code');
+
+        $subTotal = $session->subtotal();
+
+        $taxSetting = TaxSetting::first();
+        $taxRate    = $taxSetting->tax_rate ?? 0;
+        $taxAmount  = $this->computeRounded($subTotal * $taxRate / 100);
+        $total      = $this->computeRounded($subTotal + $taxAmount);
+
+        return view('waiter.sessions.show', [
+            'session'       => $session,
+            'groupedOrders' => $grouped,
+            'subTotal'      => $subTotal,
+            'taxRate'       => $taxRate,
+            'taxAmount'     => $taxAmount,
+            'total'         => $total,
+        ]);
+    }
+
+    //Get (or generate) the cart order code used for a given session
+    private function sessionCartCode(CustomerSession $session)
+    {
+        $key  = 'waiterSessionCart_' . $session->id;
+        $code = session($key);
+
+        if (empty($code)) {
+            $code = 'SES-' . $session->id . '-' . now()->format('YmdHis') . '-' . strtoupper(substr(uniqid(), -4));
+            session([$key => $code]);
+        }
+
+        return $code;
+    }
+
+    //Menu + cart for adding items to a session (reuses the new-order menu UI)
+    public function sessionNewOrder(Request $request, $sessionId)
+    {
+        $session = $this->verifiableSession($sessionId);
+
+        if (! $session->isOpen()) {
+            return redirect()->route('waiter.sessionDetails', $session)->with('alert', [
+                'type'    => 'error',
+                'message' => 'This session is no longer open. The bill has been requested.',
+            ]);
+        }
+
+        $waiter   = $this->waiter();
+        $orderCode = $this->sessionCartCode($session);
+
+        $categories = Category::all();
+        $selectedCategoryId = $request->query('categoryId');
+
+        $productQuery = Product::query();
+        if ($selectedCategoryId) {
+            $productQuery->where('category_id', $selectedCategoryId);
+        }
+        if ($request->filled('searchKey')) {
+            $productQuery->where('name', 'like', '%' . $request->searchKey . '%');
+        }
+        $products = $productQuery->get();
+
+        $today     = Carbon::today();
+        $discounts = Discount::whereDate('start_date', '<=', $today)
+            ->whereDate('end_date', '>=', $today)
+            ->get();
+
+        $discountedProducts    = [];
+        $allDiscountPercentage = null;
+
+        foreach ($discounts as $discount) {
+            if ($discount->product_id) {
+                $discountedProducts[$discount->product_id] = $discount->discount_percentage;
+            } else {
+                $allDiscountPercentage = $discount->discount_percentage;
+            }
+        }
+
+        foreach ($products as $product) {
+            $product->sizes = ProductSize::where('product_id', $product->id)->get(['size', 'price']);
+            $discount = $discountedProducts[$product->id] ?? $allDiscountPercentage;
+            $product->discount_percentage = $discount;
+        }
+
+        $cartItems = $this->getCartItems($waiter->id, $orderCode);
+
+        $subTotal = $cartItems->sum(fn($item) => $item->discount_price * $item->cart_qty);
+
+        $taxSetting = TaxSetting::first();
+        $taxRate    = $taxSetting->tax_rate ?? 0;
+        $taxAmount  = $this->computeRounded($subTotal * $taxRate / 100);
+        $total      = $this->computeRounded($subTotal + $taxAmount);
+
+        return view('waiter.sessions.menu', [
+            'session'           => $session,
+            'products'          => $products,
+            'categories'        => $categories,
+            'selectedCategoryId' => $selectedCategoryId,
+            'orderCode'         => $orderCode,
+            'cartItems'         => $cartItems,
+            'subTotal'          => $subTotal,
+            'taxAmount'         => $taxAmount,
+            'taxRate'           => $taxRate,
+            'total'             => $total,
+        ]);
+    }
+
+    //Place the session's cart into the session as a new order group (running bill, no single payment)
+    public function placeSessionOrder(Request $request, $sessionId)
+    {
+        $session = $this->verifiableSession($sessionId);
+
+        if (! $session->isOpen()) {
+            return redirect()->route('waiter.sessionDetails', $session)->with('alert', [
+                'type'    => 'error',
+                'message' => 'This session is no longer open. Additional items are not allowed.',
+            ]);
+        }
+
+        $validated = $request->validate([
+            'orderCode'     => 'required|string',
+            'paymentMethod' => 'required|string|in:cash,card,mobile',
+            'orderType'     => 'required|string|in:eat_in,take_away,delivery',
+        ]);
+
+        $orderCode = $validated['orderCode'];
+        $waiter    = $this->waiter();
+
+        $carts = Cart::join('products', 'carts.product_id', '=', 'products.id')
+            ->leftJoin('discounts', function ($join) {
+                $join->on('products.id', '=', 'discounts.product_id')
+                    ->whereDate('discounts.start_date', '<=', now())
+                    ->whereDate('discounts.end_date', '>=', now());
+            })
+            ->leftJoin('product_sizes', function ($join) {
+                $join->on('products.id', '=', 'product_sizes.product_id')
+                    ->on('carts.size', '=', 'product_sizes.size');
+            })
+            ->selectRaw('IF(discounts.product_id IS NOT NULL,
+                            product_sizes.price - (product_sizes.price * discounts.discount_percentage / 100),
+                            product_sizes.price
+                            ) as discount_price,
+                            carts.qty,
+                            carts.orderCode,
+                            carts.product_id,
+                            carts.size,
+                            carts.notes')
+            ->where('carts.orderCode', $orderCode)
+            ->where('carts.user_id', $waiter->id)
+            ->get();
+
+        if ($carts->isEmpty()) {
+            return back()->with('alert', [
+                'type'    => 'error',
+                'message' => 'Your cart is empty.',
+            ]);
+        }
+
+        $orderTypeMapping = ['eat_in' => 1, 'take_away' => 2, 'delivery' => 3];
+        $orderType        = $orderTypeMapping[$validated['orderType']];
+
+        foreach ($carts as $cart) {
+            Order::create([
+                'user_id'          => $waiter->id,
+                'waiter_id'        => $waiter->id,
+                'branch_id'        => $waiter->branch_id,
+                'session_id'       => $session->id,
+                'product_id'       => $cart->product_id,
+                'order_code'       => $cart->orderCode,
+                'quantity'         => $cart->qty,
+                'totalprice'       => $cart->discount_price,
+                'status'           => 1,
+                'payment_method'   => $validated['paymentMethod'],
+                'order_type'       => $orderType,
+                'size'             => $cart->size,
+                'notes'            => $cart->notes,
+            ]);
+        }
+
+        Cart::where('orderCode', $orderCode)->where('user_id', $waiter->id)->delete();
+
+        session()->forget('waiterSessionCart_' . $session->id);
+
+        //KOT auto-print: flagged once after successful submission.
+        session()->flash('kotOrderCode', $orderCode);
+
+        return redirect()->route('waiter.sessionDetails', $session)->with('alert', [
+            'type'    => 'success',
+            'message' => 'Order added to session #' . $session->session_code . '.',
+        ]);
+    }
+
+    //Request the bill: open -> bill_requested (stops further additions server-side)
+    public function requestBill($sessionId)
+    {
+        $session = $this->verifiableSession($sessionId);
+
+        if (! $session->isOpen()) {
+            return back()->with('alert', [
+                'type'    => 'error',
+                'message' => 'This session is no longer awaiting the bill.',
+            ]);
+        }
+
+        if ($session->ordersCount() === 0) {
+            return back()->with('alert', [
+                'type'    => 'error',
+                'message' => 'Cannot request the bill for an empty session.',
+            ]);
+        }
+
+        $session->status            = CustomerSession::STATUS_BILL_REQUESTED;
+        $session->bill_requested_at = now();
+        $session->save();
+
+        return back()->with('alert', [
+            'type'    => 'success',
+            'message' => 'Bill requested for session #' . $session->session_code . '. No more items can be added.',
         ]);
     }
 }

@@ -17,4 +17,9 @@ class Branch extends Model
     {
         return $this->hasMany(Order::class);
     }
+
+    public function customerSessions()
+    {
+        return $this->hasMany(CustomerSession::class);
+    }
 }
