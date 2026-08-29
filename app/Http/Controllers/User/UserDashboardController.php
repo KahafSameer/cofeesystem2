@@ -408,6 +408,10 @@ class UserDashboardController extends Controller
     {
         // dd($request->all());
 
+        // Ownership: a customer may only confirm a cart that belongs to them.
+        $user     = Auth::user();
+        $branchId = $user->branch_id ?: optional(\App\Models\Branch::where('status', 'Active')->first())->id;
+
         $carts = Cart::selectRaw('
                 IF(discounts.product_id IS NOT NULL,
                     product_sizes.price - (product_sizes.price * discounts.discount_percentage / 100),
@@ -437,6 +441,7 @@ class UserDashboardController extends Controller
                     ->on('carts.size', '=', 'product_sizes.size');
             })
             ->where('carts.orderCode', $request->orderCode)
+            ->where('carts.user_id', $user->id)
             ->groupBy('carts.orderCode', 'carts.user_id', 'carts.product_id',
                 'discounts.product_id', 'product_sizes.price',
                 'discounts.discount_percentage', 'carts.size', 'carts.notes')
@@ -448,6 +453,7 @@ class UserDashboardController extends Controller
                 'user_id'        => $cart->cartid,
                 'product_id'     => $cart->product_id,
                 'order_code'     => $cart->orderCode,
+                'branch_id'      => $branchId,
                 'quantity'       => $cart->quantity,
                 'totalprice'     => $cart->totalPrice,
                 'status'         => 1,
@@ -458,7 +464,10 @@ class UserDashboardController extends Controller
             ]);
         }
 
-        Cart::where('carts.orderCode', $request->orderCode)->delete();
+        // Only delete the current user's carts for this order code.
+        Cart::where('carts.orderCode', $request->orderCode)
+            ->where('carts.user_id', $user->id)
+            ->delete();
 
         $order = Order::where('order_code', $request->orderCode)->first();
 

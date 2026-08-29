@@ -77,4 +77,16 @@ class CustomerSession extends Model
             ->groupBy('order_code')
             ->count();
     }
+
+    //Unique settlement order code, created once when the session is settled
+    public function settlementCode()
+    {
+        return 'SET-' . $this->session_code;
+    }
+
+    //The single PaymentRecord produced when this session is settled
+    public function settlementRecord()
+    {
+        return PaymentRecord::where('order_code', $this->settlementCode())->first();
+    }
 }

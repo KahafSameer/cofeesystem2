@@ -359,20 +359,9 @@ class WaiterController extends Controller
 
         Cart::where('orderCode', $orderCode)->where('user_id', $waiter->id)->delete();
 
-        $subTotal = $carts->sum(fn($item) => $item->discount_price * $item->qty);
-        $taxRate  = optional(TaxSetting::first())->tax_rate ?? 0;
-        $taxAmount = $this->computeRounded($subTotal * $taxRate / 100);
-        $total    = $this->computeRounded($subTotal + $taxAmount);
-
-        PaymentRecord::create([
-            'order_code'     => $orderCode,
-            'user_id'        => $waiter->id,
-            'net_amount'     => $total,
-            'paid_amount'    => $total,
-            'change_amount'  => 0,
-            'payment_method' => ucfirst($validated['paymentMethod']),
-            'status'         => 1,
-        ]);
+        // No PaymentRecord is created here: money is only recorded when the
+        // cashier settles the bill (standalone order or running-bill session).
+        // Placing an order only produces kitchen orders (status 1).
 
         $request->session()->forget('waiterOrderCode');
 
@@ -482,7 +471,7 @@ class WaiterController extends Controller
             ->get();
     }
 
-    //Recompute order total and update the payment record
+    //Recompute order total (money is recorded only at cashier settlement)
     private function recomputeOrderTotal($orderCode)
     {
         $items    = $this->getOrderItems($orderCode);
@@ -491,14 +480,6 @@ class WaiterController extends Controller
         $taxRate   = optional(TaxSetting::first())->tax_rate ?? 0;
         $taxAmount = $this->computeRounded($subTotal * $taxRate / 100);
         $total     = $this->computeRounded($subTotal + $taxAmount);
-
-        $record = PaymentRecord::where('order_code', $orderCode)->first();
-        if ($record) {
-            $record->net_amount   = $total;
-            $record->paid_amount  = $total;
-            $record->change_amount = 0;
-            $record->save();
-        }
 
         return $total;
     }

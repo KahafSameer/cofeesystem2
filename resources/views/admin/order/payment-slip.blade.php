@@ -62,7 +62,7 @@
                 </tr>
                 <tr style="font-weight: bold;">
                     <td style="text-align: left;">Net Amount</td>
-                    <td style="text-align: right;">{{ $records->first()->paid_amount - $records->first()->change_amount }}</td>
+                    <td style="text-align: right;">{{ number_format($records->first()->net_amount ?? 0, 2, '.', ',') }}</td>
                 </tr>
             </table>
         </div>

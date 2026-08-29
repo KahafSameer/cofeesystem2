@@ -42,7 +42,7 @@ database is never modified.
 ## Manual smoke test
 
 1. Login as a `cashier` role user → redirected to `cashier.index` (`/cashier`).
-2. **+ NEW ORDER** → a `CSR-…` ticket is created and becomes current.
+2. ** NEW ORDER** → a `CSR-…` ticket is created and becomes current.
 3. Add products with size/quantity/notes → they appear on the ticket with
    live totals (tax + delivery fee are server-side).
 4. Change **order type** (Eat at Shop / Take Away / Delivery) → Delivery shows

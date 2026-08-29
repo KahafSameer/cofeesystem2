@@ -23,4 +23,10 @@ Route::group(['prefix' => 'cashier', 'middleware' => ['auth', 'cashier']], funct
 
     // Finalize: existing Order + PaymentRecord engine, then the draft is archived
     Route::post('{orderCode}/charge', [CashierController::class, 'charge'])->name('cashier.charge');
+
+    // Running bills / waiter session settlement (branch-scoped)
+    Route::get('sessions', [CashierController::class, 'sessions'])->name('cashier.sessions');
+    Route::get('sessions/{sessionId}', [CashierController::class, 'sessionDetails'])->name('cashier.sessionDetails');
+    Route::post('sessions/{sessionId}/settle', [CashierController::class, 'settleSession'])->name('cashier.settleSession');
+    Route::get('sessions/{sessionId}/bill', [CashierController::class, 'sessionBill'])->name('cashier.sessionBill');
 });

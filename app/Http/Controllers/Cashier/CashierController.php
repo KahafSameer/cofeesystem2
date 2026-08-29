@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Cart;
 use App\Models\CashierDraft;
 use App\Models\Category;
+use App\Models\CustomerSession;
 use App\Models\DeliveryFees;
 use App\Models\Order;
 use App\Models\PaymentRecord;
@@ -107,7 +108,7 @@ class CashierController extends Controller
     }
 
     /**
-     * + NEW ORDER - create an independent, empty ticket and make it current.
+     * NEW ORDER - create an independent, empty ticket and make it current.
      */
     public function createDraft(Request $request)
     {
@@ -617,5 +618,194 @@ class CashierController extends Controller
         }
 
         return $summary;
+    }
+
+    /**
+     * Running bills: all live waiter sessions of this cashier's branch.
+     * Sessions awaiting a bill are payable; open ones are displayed for tracking.
+     */
+    public function sessions()
+    {
+        $sessions = CustomerSession::with(['waiter'])
+            ->where('branch_id', auth()->user()->branch_id)
+            ->whereIn('status', [CustomerSession::STATUS_OPEN, CustomerSession::STATUS_BILL_REQUESTED])
+            ->orderByDesc('opened_at')
+            ->get();
+
+        $summary = $sessions->mapWithKeys(function ($session) {
+            $subTotal = $session->subtotal();
+            $taxAmount = $this->roundUp($subTotal * ($this->taxRate() / 100));
+            $total = $this->roundUp($subTotal + $taxAmount);
+
+            return [
+                $session->id => [
+                    'orders'   => $session->ordersCount(),
+                    'subtotal' => $subTotal,
+                    'tax'      => $taxAmount,
+                    'total'    => $total,
+                ],
+            ];
+        });
+
+        return view('cashier.sessions.index', [
+            'sessions' => $sessions,
+            'summary'  => $summary,
+        ]);
+    }
+
+    /**
+     * Session detail: grouped ticket lines + settle form (only when bill requested).
+     */
+    public function sessionDetails($sessionId)
+    {
+        $session = CustomerSession::where('id', $sessionId)
+            ->where('branch_id', auth()->user()->branch_id)
+            ->firstOrFail();
+
+        $orders = Order::with(['product'])
+            ->where('session_id', $session->id)
+            ->orderBy('created_at')
+            ->get();
+
+        $groupedOrders = $orders->groupBy('order_code');
+
+        $subTotal = $session->subtotal();
+        $taxAmount = $this->roundUp($subTotal * ($this->taxRate() / 100));
+        $total = $this->roundUp($subTotal + $taxAmount);
+
+        return view('cashier.sessions.show', [
+            'session'       => $session,
+            'groupedOrders' => $groupedOrders,
+            'subTotal'      => $subTotal,
+            'taxRate'       => $this->taxRate(),
+            'taxAmount'     => $taxAmount,
+            'total'         => $total,
+            'settlement'    => $session->settlementRecord(),
+        ]);
+    }
+
+    /**
+     * Settle a bill-requested session of this branch: create ONE PaymentRecord
+     * (order_code = SET-<session_code>), close the session and mark all of its
+     * non-rejected orders as completed.
+     */
+    public function settleSession(Request $request, $sessionId)
+    {
+        $validated = $request->validate([
+            'paymentMethod' => ['required', 'string', 'in:cash,card,mobile'],
+            'cashReceived'  => ['required', 'numeric', 'min:0'],
+        ]);
+
+        $branchId = auth()->user()->branch_id;
+
+        $pending = CustomerSession::where('id', $sessionId)
+            ->where('branch_id', $branchId)
+            ->first();
+
+        if (! $pending) {
+            abort(404);
+        }
+
+        $outcome = DB::transaction(function () use ($validated, $sessionId, $branchId) {
+            $session = CustomerSession::where('id', $sessionId)
+                ->where('branch_id', $branchId)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $session) {
+                return 'missing';
+            }
+            if (! $session->isBillRequested()) {
+                return $session->isClosed() ? 'closed' : 'open';
+            }
+            if ($session->ordersCount() === 0) {
+                return 'empty';
+            }
+
+            $method = strtolower($validated['paymentMethod']);
+            $subTotal = $session->subtotal();
+            $taxAmount = $this->roundUp($subTotal * ($this->taxRate() / 100));
+            $total = $this->roundUp($subTotal + $taxAmount);
+
+            if ($method === 'cash' && (float) $validated['cashReceived'] < $total) {
+                return 'insufficient';
+            }
+
+            $paidAmount = $method === 'cash' ? (float) $validated['cashReceived'] : $total;
+            $change = max(0.0, $paidAmount - $total);
+
+            PaymentRecord::create([
+                'order_code'     => $session->settlementCode(),
+                'user_id'        => auth()->id(),
+                'net_amount'     => $total,
+                'paid_amount'    => round($paidAmount, 2),
+                'change_amount'  => round($change, 2),
+                'payment_method' => ucfirst($method),
+                'status'         => 1,
+            ]);
+
+            $session->orders()
+                ->where('status', '!=', 3)
+                ->update(['status' => 2]);
+
+            $session->status = CustomerSession::STATUS_CLOSED;
+            $session->closed_at = now();
+            $session->save();
+
+            return 'ok';
+        });
+
+        if ($outcome !== 'ok') {
+            $messages = [
+                'missing'      => 'Session not found.',
+                'closed'       => 'This session has already been settled.',
+                'open'         => 'This session is still open. The waiter must request the bill first.',
+                'empty'        => 'This session has no payable items to settle.',
+                'insufficient' => 'Insufficient cash received. Please check the amount.',
+            ];
+
+            return redirect()->route('cashier.sessionDetails', $sessionId)->with('alert', [
+                'type'    => 'error',
+                'message' => $messages[$outcome] ?? 'Could not settle this session.',
+            ]);
+        }
+
+        return redirect()->route('cashier.sessionDetails', $sessionId)->with('alert', [
+            'type'    => 'success',
+            'message' => 'Session settled. Bill #' . $pending->settlementCode(),
+        ]);
+    }
+
+    /**
+     * Printable settlement bill for a settled session of this branch.
+     */
+    public function sessionBill($sessionId)
+    {
+        $session = CustomerSession::with(['waiter'])
+            ->where('id', $sessionId)
+            ->where('branch_id', auth()->user()->branch_id)
+            ->firstOrFail();
+
+        $orders = Order::with(['product'])
+            ->where('session_id', $session->id)
+            ->where('status', '!=', 3)
+            ->orderBy('created_at')
+            ->get();
+
+        $groupedOrders = $orders->groupBy('order_code');
+
+        $subTotal = $session->subtotal();
+        $taxAmount = $this->roundUp($subTotal * ($this->taxRate() / 100));
+        $total = $this->roundUp($subTotal + $taxAmount);
+
+        return view('cashier.sessions.bill', [
+            'session'       => $session,
+            'groupedOrders' => $groupedOrders,
+            'subTotal'      => $subTotal,
+            'taxRate'       => $this->taxRate(),
+            'taxAmount'     => $taxAmount,
+            'total'         => $total,
+            'settlement'    => $session->settlementRecord(),
+        ]);
     }
 }

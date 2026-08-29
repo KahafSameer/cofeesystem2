@@ -2,52 +2,58 @@
 
 @section('content')
     <link rel="stylesheet" href="{{ asset('admin/CSS/booking.css') }}">
+    <link rel="stylesheet" href="{{ asset('admin/CSS/cashier.css') }}">
 
-    <div class="container-fluid mt-4">
+    <div class="container-fluid mt-4 cashier-pos-wrap">
         <!-- Active Tickets strip -->
-        <div class="card mb-4 shadow-sm">
-            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+        <div class="card pos-section mb-4">
+            <div class="card-header pos-section-header d-flex justify-content-between align-items-center">
                 <span><i class="fas fa-ticket-alt me-2"></i>Active Tickets</span>
-                <button type="button" class="btn btn-light btn-sm" id="newOrderButton">
-                    <i class="fa-solid fa-plus me-1"></i> + NEW ORDER
-                </button>
+                <div class="d-flex align-items-center gap-2">
+                    <a href="{{ route('cashier.sessions') }}" class="btn btn-running btn-sm">
+                        <i class="fa-solid fa-receipt me-1"></i> Running Bills
+                    </a>
+                    <button type="button" class="btn btn-new-order btn-sm" id="newOrderButton">
+                        <i class="fa-solid fa-plus me-1"></i> NEW ORDER
+                    </button>
+                </div>
             </div>
             <div class="card-body">
                 @if ($drafts->isNotEmpty())
-                    <div class="row g-2">
+                    <div class="row g-3">
                         @foreach ($drafts as $draft)
                             @php
                                 $sum = $summary[$draft->order_code] ?? ['item_count' => 0, 'total' => 0];
                                 $isCurrent = $current && $current->order_code === $draft->order_code;
                             @endphp
-                            <div class="col-md-4 mb-2">
-                                <div class="border rounded p-2 h-100 {{ $isCurrent ? 'border-primary' : '' }}">
+                            <div class="col-md-4 mb-1">
+                                <div class="ticket-card {{ $isCurrent ? 'is-current' : '' }}">
                                     <div class="d-flex justify-content-between align-items-center">
-                                        <strong>#{{ $draft->order_code }}</strong>
+                                        <span class="ticket-code">#{{ $draft->order_code }}</span>
                                         @if ($isCurrent)
-                                            <span class="badge bg-primary">Current</span>
+                                            <span class="badge status-badge current">Current</span>
                                         @elseif ($draft->status === 'suspended')
-                                            <span class="badge bg-warning text-dark">Suspended</span>
+                                            <span class="badge status-badge suspended">Suspended</span>
                                         @else
-                                            <span class="badge bg-secondary">Active</span>
+                                            <span class="badge status-badge active">Active</span>
                                         @endif
                                     </div>
-                                    <div class="small text-muted mt-1">
-                                        {{ $sum['item_count'] }} Items &middot; PKR {{ number_format($sum['total'], 0) }}
+                                    <div class="ticket-summary mt-1">
+                                        <strong>{{ $sum['item_count'] }}</strong> Items &middot; PKR <strong>{{ number_format($sum['total'], 0) }}</strong>
                                     </div>
-                                    <div class="mt-2 d-flex flex-wrap gap-1">
+                                    <div class="mt-2 d-flex flex-wrap gap-1 ticket-actions">
                                         @if (! $isCurrent)
                                             <form action="{{ route('cashier.resume', $draft->order_code) }}" method="POST" class="me-1">
                                                 @csrf
-                                                <button class="btn btn-sm btn-outline-primary">Continue</button>
+                                                <button class="btn btn-sm btn-ticket-continue">Continue</button>
                                             </form>
                                             <form action="{{ route('cashier.discard', $draft->order_code) }}" method="POST"
                                                 onsubmit="return confirm('Discard ticket {{ $draft->order_code }}? This cannot be undone.')">
                                                 @csrf
-                                                <button class="btn btn-sm btn-outline-danger">Discard</button>
+                                                <button class="btn btn-sm btn-ticket-discard">Discard</button>
                                             </form>
                                         @else
-                                            <button type="button" class="btn btn-sm btn-outline-warning hold-ticket-btn"
+                                            <button type="button" class="btn btn-sm btn-ticket-hold hold-ticket-btn"
                                                 data-code="{{ $draft->order_code }}">
                                                 <i class="fa-solid fa-pause me-1"></i>Hold / Suspend
                                             </button>
@@ -58,29 +64,31 @@
                         @endforeach
                     </div>
                 @else
-                    <p class="text-muted mb-0">No active tickets. Click <strong>+ NEW ORDER</strong> to start.</p>
+                    <p class="text-muted mb-0">No active tickets. Click <strong>NEW ORDER</strong> to start.</p>
                 @endif
             </div>
         </div>
 
         @if ($current)
-            <div class="row">
+            <div class="row g-4">
                 <div class="col-lg-8">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <a href="{{ route('adminDashboard') }}" class="btn btn-primary d-inline-flex align-items-center">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <a href="{{ route('adminDashboard') }}" class="btn btn-coffee d-inline-flex align-items-center">
                             <i class="fa-solid fa-arrow-left me-2"></i>Dashboard
                         </a>
-                        <strong>Current Ticket: #{{ $current->order_code }}</strong>
+                        <div class="pos-ticket-title">
+                            <i class="fa-solid fa-receipt me-1"></i>Current Ticket: <strong>#{{ $current->order_code }}</strong>
+                        </div>
                     </div>
 
                     <!-- Category filter -->
-                    <div class="row mb-3">
+                    <div class="row mb-4">
                         @foreach ($categories as $category)
                             <div class="col-md-2 col-3 mb-2">
                                 <form action="{{ route('cashier.index') }}" method="GET">
                                     @csrf
                                     <input type="hidden" name="categoryId" value="{{ $category->id }}">
-                                    <button type="submit" class="category-btn w-100">
+                                    <button type="submit" class="category-btn w-100 {{ $selectedCategoryId == $category->id ? 'selected' : '' }}">
                                         <div class="card category-card text-center">
                                             <h6 class="card-title mb-0">{{ $category->name }}</h6>
                                         </div>
@@ -95,7 +103,7 @@
                         @if ($productbyCategory->isNotEmpty())
                             <div class="row">
                                 @foreach ($productbyCategory as $item)
-                                    <div class="col-md-4 col-6 mb-3">
+                                    <div class="col-md-4 col-6 mb-4">
                                         @php
                                             $defaultSize = $item->sizes[0]->size ?? 'Medium';
                                         @endphp
@@ -107,14 +115,14 @@
                                             @if (count($item->sizes) === 1)
                                                 <input type="hidden" name="size" value="{{ $defaultSize }}">
                                             @endif
-                                            <div class="card h-100 shadow-sm border-1 product-card">
+                                            <div class="card h-100 product-card">
                                                 <div class="position-relative">
                                                     <img src="{{ asset('productImages/' . $item->image) }}"
                                                         class="card-img-top product-image" alt="{{ $item->name }}">
                                                     <span class="badge product-badge position-absolute top-0 start-0 m-2">{{ $item->name }}</span>
                                                 </div>
                                                 <div class="card-body d-flex flex-column">
-                                                    <p class="mb-2 text-muted small">Price:
+                                                    <p class="mb-2 text-muted small pos-price">Price:
                                                         <strong class="text-dark" id="price-{{ $item->id }}">
                                                             {{ number_format($item->sizes[0]->price ?? 0) }}
                                                         </strong>
@@ -132,7 +140,7 @@
                                                             <select name="size"
                                                                 class="form-control form-control-sm text-center fw-bold ms-1 size-dropdown"
                                                                 data-product-id="{{ $item->id }}"
-                                                                style="max-width: 44px; border: 2px solid rgb(255, 166, 0); border-radius: 4px;"
+                                                                style="max-width: 44px;"
                                                                 {{ count($item->sizes) === 1 ? 'disabled' : '' }}>
                                                                 @foreach ($item->sizes as $size)
                                                                     <option value="{{ $size->size }}" data-price="{{ $size->price }}"
@@ -144,11 +152,11 @@
                                                         @endif
                                                     </div>
                                                     <div class="mt-auto d-flex justify-content-between align-items-center">
-                                                        <button type="button" class="btn btn-outline-primary btn-sm ms-1"
+                                                        <button type="button" class="btn btn-outline-primary btn-sm ms-1 pos-note-btn"
                                                             data-bs-toggle="modal" data-bs-target="#noteModal" data-product-id="{{ $item->id }}">
                                                             <i class="fa-solid fa-pen"></i>
                                                         </button>
-                                                        <button type="submit" class="btn btn-success btn-sm mt-1">Add to Ticket</button>
+                                                        <button type="submit" class="btn btn-success btn-sm mt-1 pos-add-btn">Add to Ticket</button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -163,16 +171,18 @@
                 </div>
 
                 <div class="col-lg-4">
-                    <div class="card shadow-sm">
-                        <div class="card-header bg-dark text-white">Ticket #{{ $current->order_code }}</div>
+                    <div class="pos-ticket-wrap">
+                        <div class="pos-ticket-header d-flex justify-content-between align-items-center">
+                            <span><i class="fa-solid fa-receipt me-1"></i>Ticket #{{ $current->order_code }}</span>
+                            <span class="badge pos-ticket-count">{{ $itemCount }} items</span>
+                        </div>
                         <div class="card-body">
-                            <table class="table table-hover align-middle">
-                                <thead class="table-secondary">
+                            <div class="table-responsive">
+                            <table class="table table-hover align-middle pos-ticket-items">
+                                <thead>
                                     <tr>
                                         <th>Items</th>
                                         <th class="text-center">Qty</th>
-                                        <th class="text-center">Price</th>
-                                        <th class="text-center">Size</th>
                                         <th class="text-end">Amount</th>
                                         <th></th>
                                     </tr>
@@ -181,10 +191,9 @@
                                     @forelse ($cartItems as $item)
                                         <tr>
                                             <td>
-                                                <p class="mb-0">{{ $item->name }}</p>
-                                                @if ($item->notes)
-                                                    <small class="text-muted d-block">{{ $item->notes }}</small>
-                                                @endif
+                                                <p class="mb-0 item-name">{{ $item->name }}</p>
+                                                <small class="text-muted item-note d-block">{{ $item->notes }}</small>
+                                                <small class="text-muted">{{ strtoupper(substr($item->size, 0, 1)) }}</small>
                                             </td>
                                             <td class="text-center">
                                                 <form action="{{ route('cashier.cart.update') }}" method="POST" class="d-inline">
@@ -195,28 +204,28 @@
                                                         onchange="this.form.submit()">
                                                 </form>
                                             </td>
-                                            <td class="text-center">{{ number_format($item->price) }}</td>
-                                            <td class="text-center">{{ strtoupper(substr($item->size, 0, 1)) }}</td>
-                                            <td class="text-end">{{ number_format($item->discountPrice * $item->cart_qty) }}</td>
+                                            <td class="text-end line-amount">{{ number_format($item->discountPrice * $item->cart_qty) }}</td>
                                             <td class="text-center">
                                                 <form action="{{ route('cashier.cart.remove') }}" method="POST"
                                                     onsubmit="return confirm('Remove this item?')">
                                                     @csrf
                                                     <input type="hidden" name="cart_id" value="{{ $item->cartId }}">
-                                                    <button class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button>
+                                                    <button class="btn btn-sm remove-item-btn"><i class="fa-solid fa-trash"></i></button>
                                                 </form>
                                             </td>
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="6" class="text-center">No items on this ticket yet.</td>
+                                            <td colspan="4" class="text-center text-muted">No items on this ticket yet.</td>
                                         </tr>
                                     @endforelse
                                 </tbody>
                             </table>
+                            </div>
 
                             <!-- Order type (persisted per ticket) -->
                             <div class="mt-1">
+                                <label class="form-label pos-pay-title"><i class="fa-solid fa-burger me-1"></i>Order Type</label>
                                 <select id="orderType" name="orderType" class="form-select">
                                     <option value="eat_in" {{ $orderType === 'eat_in' ? 'selected' : '' }}>Eat at Shop</option>
                                     <option value="take_away" {{ $orderType === 'take_away' ? 'selected' : '' }}>Take Away</option>
@@ -238,57 +247,57 @@
                             @endif
 
                             <!-- Totals -->
-                            <div class="mt-3">
-                                <div class="d-flex justify-content-between"><span>Items</span><span>{{ $itemCount }}</span></div>
-                                <div class="d-flex justify-content-between"><span>Subtotal</span><span>PKR {{ number_format($subTotal, 0) }}</span></div>
-                                <div class="d-flex justify-content-between"><span>Tax</span><span>PKR {{ number_format($taxAmount, 0) }}</span></div>
+                            <div class="pos-totals mt-4">
+                                <div class="row-line"><span>Items</span><span>{{ $itemCount }}</span></div>
+                                <div class="row-line"><span>Subtotal</span><span>PKR {{ number_format($subTotal, 0) }}</span></div>
+                                <div class="row-line"><span>Tax</span><span>PKR {{ number_format($taxAmount, 0) }}</span></div>
                                 @if ($orderType === 'delivery')
-                                    <div class="d-flex justify-content-between"><span>Delivery Fee</span><span>PKR {{ number_format($deliveryFee, 0) }}</span></div>
+                                    <div class="row-line"><span>Delivery Fee</span><span>PKR {{ number_format($deliveryFee, 0) }}</span></div>
                                 @endif
-                                <div class="d-flex justify-content-between fw-bold">
+                                <div class="total-line">
                                     <span>Total</span>
-                                    <span>PKR {{ number_format($total, 0) }}</span>
+                                    <span class="pos-total-amount">PKR {{ number_format($total, 0) }}</span>
                                 </div>
                             </div>
 
                             <!-- Payment -->
                             <div class="mt-4">
-                                <h6>Select Payment Method</h6>
+                                <label class="form-label pos-pay-title"><i class="fa-solid fa-money-bill-wave me-1"></i>Payment Method</label>
                                 <input type="hidden" id="selectedPaymentMethod" value="">
-                                <div class="btn-group" role="group">
-                                    <button type="button" class="btn btn-outline-primary" onclick="showPaymentSection('cash')">Cash</button>
-                                    <button type="button" class="btn btn-outline-primary" onclick="showPaymentSection('card')">Card</button>
-                                    <button type="button" class="btn btn-outline-primary" onclick="showPaymentSection('mobile')">Mobile</button>
+                                <div class="d-grid gap-2 d-md-flex justify-content-start" role="group">
+                                    <button type="button" class="btn payment-method-btn" data-method="cash" onclick="showPaymentSection('cash')">Cash</button>
+                                    <button type="button" class="btn payment-method-btn" data-method="card" onclick="showPaymentSection('card')">Card</button>
+                                    <button type="button" class="btn payment-method-btn" data-method="mobile" onclick="showPaymentSection('mobile')">Mobile</button>
                                 </div>
                             </div>
                             <div id="paymentDetails" class="mt-3">
                                 <div id="cashPaymentSection" style="display: none;">
-                                    <label for="cashReceived">Cash Received</label>
+                                    <label class="form-label" for="cashReceived">Cash Received</label>
                                     <input type="number" class="form-control" id="cashReceived" min="0"
                                         placeholder="Enter cash received" onchange="calculateChange()">
                                     <p class="mt-2">Change Due: <span id="changeDue">0.00</span></p>
                                 </div>
                                 <div id="cardPaymentSection" style="display: none;">
-                                    <label for="cardNumber">Card Number</label>
+                                    <label class="form-label" for="cardNumber">Card Number</label>
                                     <input type="text" class="form-control" id="cardNumber" placeholder="XXXX-XXXX-XXXX-XXXX">
-                                    <label for="expirationDate" class="mt-2">Expiration Date</label>
+                                    <label class="form-label mt-2" for="expirationDate">Expiration Date</label>
                                     <input type="text" class="form-control" id="expirationDate" placeholder="MM/YY">
-                                    <label for="cvv" class="mt-2">CVV</label>
+                                    <label class="form-label mt-2" for="cvv">CVV</label>
                                     <input type="text" class="form-control" id="cvv" placeholder="CVV">
                                 </div>
                                 <div id="mobilePaymentSection" style="display: none; text-align: center;">
-                                    <p>Scan the QR code with your mobile payment app.</p>
+                                    <p class="text-muted">Scan the QR code with your mobile payment app.</p>
                                 </div>
                             </div>
 
-                            <div class="d-flex mt-4 justify-content-between">
-                                <button type="button" class="btn btn-outline-warning hold-ticket-btn"
+                            <div class="d-flex mt-4 justify-content-between gap-2">
+                                <button type="button" class="btn btn-hold hold-ticket-btn"
                                     data-code="{{ $current->order_code }}">
                                     <i class="fa-solid fa-pause me-1"></i>Hold / Suspend
                                 </button>
-                                <button id="confirm-payment-btn" type="button" class="btn btn-primary"
+                                <button id="confirm-payment-btn" type="button" class="btn btn-coffee pos-confirm-btn"
                                     {{ $cartItems->isEmpty() ? 'disabled' : '' }}>
-                                    Confirm &amp; Pay
+                                    <i class="fa-solid fa-check-circle me-1"></i>Confirm &amp; Pay
                                 </button>
                             </div>
                         </div>
@@ -300,28 +309,30 @@
             <div class="modal fade" id="noteModal" tabindex="-1" aria-labelledby="noteModalLabel" aria-hidden="true">
                 <div class="modal-dialog">
                     <div class="modal-content">
-                        <div class="modal-header">
-                            <h5>Add Special Instructions</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="close"></button>
+                        <div class="modal-header pos-modal-header">
+                            <h5 class="modal-title mb-0"><i class="fa-solid fa-pen me-2"></i>Add Special Instructions</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="close"></button>
                         </div>
                         <div class="modal-body">
                             <textarea class="form-control" id="noteTextarea" rows="3" placeholder="eg. no milk"></textarea>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                            <button type="button" class="btn btn-primary" id="saveNoteBtn">Save Note</button>
+                            <button type="button" class="btn btn-coffee" id="saveNoteBtn">Save Note</button>
                         </div>
                     </div>
                 </div>
             </div>
         @else
             <!-- Empty state -->
-            <div class="text-center py-5">
-                <i class="fa-solid fa-cash-register fa-3x text-muted mb-3"></i>
+            <div class="text-center py-5 pos-empty-state">
+                <div class="icon-circle">
+                    <i class="fa-solid fa-cash-register fa-3x"></i>
+                </div>
                 <h4>No Active Ticket</h4>
-                <p class="text-muted">Click <strong>+ NEW ORDER</strong> to start a new ticket for the next customer.</p>
-                <button type="button" class="btn btn-primary btn-lg" id="newOrderButtonEmpty">
-                    <i class="fa-solid fa-plus me-1"></i> + NEW ORDER
+                <p>Click <strong>NEW ORDER</strong> to start a new ticket for the next customer.</p>
+                <button type="button" class="btn btn-coffee btn-lg" id="newOrderButtonEmpty">
+                    <i class="fa-solid fa-plus me-1"></i> NEW ORDER
                 </button>
             </div>
         @endif
@@ -329,7 +340,7 @@
 @endsection
 @section('scripts')
     <script>
-    // + NEW ORDER - create an independent empty ticket and reload
+    // NEW ORDER - create an independent empty ticket and reload
     function newOrder() {
         fetch("{{ route('cashier.new') }}", {
             method: "POST",
@@ -445,7 +456,7 @@
         .then(() => window.location.reload());
     }
 
-    // Payment method toggling
+    // Payment method toggling (keeps the coffee "active" highlight in sync)
     function showPaymentSection(method) {
         ['cashPaymentSection', 'cardPaymentSection', 'mobilePaymentSection'].forEach(id => {
             document.getElementById(id).style.display = 'none';
@@ -453,6 +464,10 @@
         document.getElementById(method === 'cash' ? 'cashPaymentSection'
             : method === 'card' ? 'cardPaymentSection' : 'mobilePaymentSection').style.display = 'block';
         document.getElementById('selectedPaymentMethod').value = method;
+
+        document.querySelectorAll('.payment-method-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.getAttribute('data-method') === method);
+        });
     }
 
     function calculateChange() {
