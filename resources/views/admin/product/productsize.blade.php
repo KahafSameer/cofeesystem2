@@ -12,7 +12,7 @@
                     <input type="text" name="sizes[]" class="form-control" placeholder="Size (e.g. Small)" required>
                 </div>
                 <div class="col-md-5">
-                    <input type="number" name="prices[]" class="form-control" step="10" placeholder="Price (MMK)" required>
+                    <input type="number" name="prices[]" class="form-control" step="10" placeholder="Price (PKR)" required>
                 </div>
                 <div class="col-md-2">
                     <button type="button" class="btn btn-danger w-100 remove-size-price">Remove</button>
@@ -43,7 +43,7 @@
                 <input type="text" name="sizes[]" class="form-control" placeholder="Size (e.g. Medium)" required>
             </div>
             <div class="col-md-5">
-                <input type="number" name="prices[]" class="form-control" step="0.01" placeholder="Price (MMK)" required>
+                <input type="number" name="prices[]" class="form-control" step="0.01" placeholder="Price (PKR)" required>
             </div>
             <div class="col-md-2">
                 <button type="button" class="btn btn-danger w-100 remove-size-price">Remove</button>

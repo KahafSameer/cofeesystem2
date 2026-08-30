@@ -16,12 +16,26 @@
                             @csrf
                             <div class="mb-3">
                                 <label for="profile" class="form-label">User Profile</label>
-                                <select id="profile" name="profile" class="form-select">
+                                <select id="profile" name="profile" class="form-select" onchange="toggleBranchField()">
                                     <option value="admin">Admin</option>
                                     <option value="cashier">Cashier</option>
                                     <option value="chef">Chef</option>
                                     <option value="waiter">Waiter</option>
                                 </select>
+                            </div>
+                            <div class="mb-3" id="branchField" style="display: none;">
+                                <label for="branch_id" class="form-label">Branch</label>
+                                <select name="branch_id" id="branch_id" class="form-select @error('branch_id') is-invalid @enderror">
+                                    <option value="">Choose branch...</option>
+                                    @foreach ($branches as $branch)
+                                        <option value="{{ $branch->id }}" {{ old('branch_id') == $branch->id ? 'selected' : '' }}>
+                                            {{ $branch->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('branch_id')
+                                    <small class="invalid-feedback">{{ $message }}</small>
+                                @enderror
                             </div>
                             <div class="mb-3">
                                 <label for="name" class="form-label">Name</label>
@@ -64,4 +78,28 @@
             </div>
 
         </section>
+@endsection
+
+@section('scripts')
+<script>
+    function toggleBranchField() {
+        const profile = document.getElementById('profile');
+        const branchField = document.getElementById('branchField');
+        const branchSelect = document.getElementById('branch_id');
+        const branchRoles = ['cashier', 'chef', 'waiter'];
+
+        if (branchRoles.includes(profile.value)) {
+            branchField.style.display = 'block';
+            branchSelect.setAttribute('required', 'required');
+        } else {
+            branchField.style.display = 'none';
+            branchSelect.removeAttribute('required');
+            branchSelect.value = '';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        toggleBranchField();
+    });
+</script>
 @endsection

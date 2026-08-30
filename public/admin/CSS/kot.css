@@ -1,0 +1,92 @@
+/* Kitchen Order Ticket (KOT) - thermal / receipt printer friendly */
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Courier New', Courier, monospace;
+    color: #000;
+    background: #fff;
+    margin: 0;
+    padding: 0;
+}
+
+.kot-container {
+    width: 80mm;           /* 80mm thermal paper */
+    margin: 0 auto;
+    padding: 5mm 3mm;
+    font-size: 11px;
+    line-height: 1.35;
+}
+
+.kot-title {
+    text-align: center;
+    font-weight: bold;
+    font-size: 14px;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+}
+
+.kot-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+}
+
+hr {
+    border: 0;
+    border-top: 1px dashed #000;
+    margin: 6px 0;
+}
+
+.kot-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+}
+
+.kot-table th {
+    text-align: left;
+    border-bottom: 1px solid #000;
+    font-size: 10px;
+    text-transform: uppercase;
+}
+
+.kot-table td {
+    padding: 2px 0;
+}
+
+.kot-table td:nth-child(2),
+.kot-table td:nth-child(3) {
+    text-align: center;
+}
+
+.kot-note {
+    font-size: 10px;
+    font-style: italic;
+    padding-bottom: 4px;
+}
+
+.kot-notes {
+    font-size: 10px;
+}
+
+.kot-footer {
+    text-align: center;
+    margin-top: 8px;
+    font-size: 10px;
+    text-transform: uppercase;
+}
+
+@media print {
+    @page {
+        size: 80mm auto;
+        margin: 5mm;
+    }
+
+    .kot-container {
+        width: 80mm;
+    }
+}

@@ -25,8 +25,17 @@
             </a>
 
             @if (auth()->user()->role === 'cashier')
-                <a href="{{ route('bookingPage') }}" class="btn mb-2" style="background-color: #66401d; color: white;">
-                    <i class="fas fa-calendar-alt me-2"></i> Booking
+                <a href="{{ route('cashier.index') }}" class="btn mb-2" style="background-color: #66401d; color: white;">
+                    <i class="fas fa-cash-register me-2"></i> Cashier POS
+                </a>
+            @endif
+
+            @if (in_array(auth()->user()->role, ['cashier', 'admin'], true))
+                <a href="{{ route('cashier.sessions') }}" class="btn mb-2" style="background-color: #66401d; color: white;">
+                    <i class="fa-solid fa-receipt me-2"></i> Bill Requests
+                    @if (($cashierPendingBills ?? 0) > 0)
+                        <span class="badge bg-danger rounded-pill ms-1">{{ $cashierPendingBills }}</span>
+                    @endif
                 </a>
             @endif
 
@@ -40,6 +49,8 @@
                 <ul class="catmenu list-unstyled">
                     <li><a href="{{ route('category.list') }}" class="btn mb-2" style="background-color: #f1e797; color: black;">
                         <i class="fas fa-tags me-2"></i> Categories</a></li>
+                    <li><a href="{{ route('branch.index') }}" class="btn mb-2" style="background-color: #f1e797; color: black;">
+                        <i class="fas fa-store me-2"></i> Branches</a></li>
                     <li><a href="{{ route('product.prodlist') }}" class="btn mb-2" style="background-color: #f1e797; color: black;">
                         <i class="fas fa-boxes me-2"></i> Products</a></li>
                     <li><a href="{{ route('discountPage') }}" class="btn mb-2" style="background-color: #f1e797; color: black;">

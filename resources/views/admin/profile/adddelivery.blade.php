@@ -21,7 +21,7 @@
                                     data-township="{{ $item->township }}"
                                     data-fee="{{ $item->fees }}"
                                 @if (old('location_id') == $item->id) selected @endif>
-                                {{ $item->city }} - {{ $item->township }} - {{ $item->fees }} Ks
+                                {{ $item->city }} - {{ $item->township }} - {{ $item->fees }} PKR
                             </option>
                         @endforeach
                     </select>

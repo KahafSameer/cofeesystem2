@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\AssetController;
+use App\Http\Controllers\Admin\BranchController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\ProductController;
@@ -40,6 +41,15 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin'], function () {
         Route::get('edit/{id}', 'edit')->name('category.edit');
         Route::post('update/{id}', 'update')->name('category.update');
         Route::delete('delete/{id}', 'delete')->name('category.delete');
+    });
+
+    Route::prefix('branch')->controller(BranchController::class)->group(function () {
+        Route::get('list', 'index')->name('branch.index');
+        Route::get('create', 'create')->name('branch.create');
+        Route::post('store', 'store')->name('branch.store');
+        Route::get('edit/{id}', 'edit')->name('branch.edit');
+        Route::post('update/{id}', 'update')->name('branch.update');
+        Route::get('status/{id}', 'toggleStatus')->name('branch.status');
     });
 
     Route::prefix('product')->controller(ProductController::class)->group(function () {

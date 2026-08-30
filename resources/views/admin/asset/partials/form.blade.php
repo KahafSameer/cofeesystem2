@@ -25,6 +25,17 @@
             </select>
         </div>
         <div class="col-md-6">
+            <label for="branch_id" class="form-label fw-semibold">Branch</label>
+            <select name="branch_id" class="form-select">
+                <option value="">Not Assigned</option>
+                @foreach($branches as $branch)
+                    <option value="{{ $branch->id }}" {{ old('branch_id', $asset->branch_id ?? '') == $branch->id ? 'selected' : '' }}>
+                        {{ $branch->name }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+        <div class="col-md-6">
             <label for="asset_category_id" class="form-label fw-semibold">Category</label>
             <select name="asset_category_id" class="form-select" required>
                 <option value="">Select Category</option>

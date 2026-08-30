@@ -101,6 +101,13 @@ class OrderController extends Controller
             ->where('product_id', $validated['product_id'])
             ->first();
 
+        // Branch isolation: staff may only accept/reject orders that belong to
+        // their own branch; admins retain full access.
+        if ($order && auth()->user()->role !== 'admin'
+            && (int) $order->branch_id !== (int) auth()->user()->branch_id) {
+            abort(403);
+        }
+
         if ($order) {
             // Update the status based on the action
             if ($validated['action'] === 'accept') {
@@ -517,7 +524,19 @@ class OrderController extends Controller
     private function getPaymentRecordData($orderCode)
     {
 
-        $order        = Order::where('order_code', $orderCode)->first();
+        $order = Order::where('order_code', $orderCode)->first();
+
+        if (! $order) {
+            abort(404);
+        }
+
+        // Branch isolation: staff may only retrieve payment records for orders
+        // that belong to their own branch; admins retain full access.
+        $user = auth()->user();
+        if ($user->role !== 'admin' && (int) $order->branch_id !== (int) $user->branch_id) {
+            abort(404);
+        }
+
         $smallestUnit = 10;
 
         $records = PaymentRecord::selectRaw('
@@ -541,7 +560,11 @@ class OrderController extends Controller
                                             product_sizes.size')
             ->leftJoin('orders', 'payment_records.order_code', '=', 'orders.order_code')
             ->leftJoin('products', 'orders.product_id', '=', 'products.id')
-            ->leftJoin('discounts', 'products.id', '=', 'discounts.product_id')
+            ->leftJoin('discounts', function ($join) {
+                $join->on('products.id', '=', 'discounts.product_id')
+                    ->whereDate('discounts.start_date', '<=', now())
+                    ->whereDate('discounts.end_date', '>=', now());
+            })
             ->leftJoin('product_sizes', function ($join) {
                 $join->on('product_sizes.product_id', '=', 'products.id')
                     ->on('product_sizes.size', '=', 'orders.size');

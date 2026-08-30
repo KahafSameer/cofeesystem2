@@ -39,7 +39,7 @@
                     <thead class="table-dark">
                         <tr>
                             <th>Date</th>
-                            <th>Total Sales (MMK)</th>
+                            <th>Total Sales (PKR)</th>
                             <th>Orders 📦</th>
                             <th>Avg. Order Value</th>
                         </tr>

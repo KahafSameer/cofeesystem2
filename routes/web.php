@@ -8,10 +8,20 @@ use App\Http\Controllers\ProviderController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\User\UserDashboardController;
 use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Chef\ChefController;
 
 require __DIR__.'/auth.php';
-require_once __DIR__.'/admin.php';
-require_once __DIR__.'/user.php';
+require __DIR__.'/admin.php';
+require __DIR__.'/user.php';
+require __DIR__.'/waiter.php';
+require __DIR__.'/chef.php';
+require __DIR__.'/cashier.php';
+
+// Shared KOT print endpoint - accessible to the owning waiter (auto-print after
+// order submission) and to a chef of the order's branch (manual reprint).
+Route::get('/kitchen/print/{orderCode}', [ChefController::class, 'printKot'])
+    ->middleware('auth')
+    ->name('kitchen.kotPrint');
 
 
 // $user->token

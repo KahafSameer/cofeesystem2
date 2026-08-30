@@ -28,7 +28,8 @@ class User extends Authenticatable
         'address',
         'profile',
         'role',
-        'status'
+        'status',
+        'branch_id'
     ];
 
     /**
@@ -52,6 +53,21 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    public function waiterOrders()
+    {
+        return $this->hasMany(Order::class, 'waiter_id');
+    }
+
+    public function waiterSessions()
+    {
+        return $this->hasMany(CustomerSession::class, 'waiter_id');
     }
 
 }

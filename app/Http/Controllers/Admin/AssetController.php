@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Asset;
 use App\Models\AssetCategory;
+use App\Models\Branch;
 use App\Models\User;
 use Illuminate\Http\Request;
 
@@ -85,6 +86,7 @@ class AssetController extends Controller
     {
         $categories = AssetCategory::all();
         $users      = User::all();
+        $branches   = Branch::where('status', 'Active')->orderBy('name')->get();
 
         // To generate Serial Number
         $datePrefix  = now()->format('dmY');
@@ -105,6 +107,7 @@ class AssetController extends Controller
         return view('admin.asset.create', [
             'categories'   => $categories,
             'users'        => $users,
+            'branches'     => $branches,
             'serialNumber' => $serialNumber,
         ]);
     }
@@ -116,6 +119,7 @@ class AssetController extends Controller
             'name'                 => 'required|string|max:255',
             'asset_category_id'    => 'required|exists:asset_categories,id',
             'assigned_user_id'     => 'nullable|exists:users,id',
+            'branch_id'            => 'nullable|exists:branches,id',
             'purchase_date'        => 'required|date',
             'purchase_value'       => 'required|numeric',
             'depreciation_rate'    => 'nullable|numeric',
@@ -142,8 +146,9 @@ class AssetController extends Controller
         $asset      = Asset::findOrFail($id);
         $categories = AssetCategory::all();
         $users      = User::all();
+        $branches   = Branch::where('status', 'Active')->orderBy('name')->get();
 
-        return view('admin.asset.edit', compact('asset', 'users', 'categories'));
+        return view('admin.asset.edit', compact('asset', 'users', 'categories', 'branches'));
     }
 
     public function asset_update(Request $request, $id)
@@ -152,6 +157,7 @@ class AssetController extends Controller
             'name'                 => 'required|string|max:255',
             'asset_category_id'    => 'required|exists:asset_categories,id',
             'assigned_user_id'     => 'nullable|exists:users,id',
+            'branch_id'            => 'nullable|exists:branches,id',
             'purchase_date'        => 'required|date',
             'purchase_value'       => 'required|numeric',
             'depreciation_rate'    => 'nullable|numeric',

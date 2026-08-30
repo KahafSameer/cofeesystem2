@@ -32,6 +32,7 @@
                                 <th>Phone</th>
                                 <th>Actions</th>
                                 <th>Role</th>
+                                <th>Branch</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -45,12 +46,12 @@
                                         @csrf
                                         <input type="hidden" name="field" value="status">
                                         <select name="value" onchange="this.form.submit()" class="form-select">
-                                            <option value="active"
-                                                {{ strtolower($item->status) === 'active' ? 'selected' : '' }}>
+                                            <option value="Active"
+                                                {{ $item->status === 'Active' ? 'selected' : '' }}>
                                                 Active
                                             </option>
-                                            <option value="inactive"
-                                                {{ strtolower($item->status) === 'inactive' ? 'selected' : '' }}>
+                                            <option value="Inactive"
+                                                {{ $item->status === 'Inactive' ? 'selected' : '' }}>
                                                 Inactive
                                             </option>
                                         </select>
@@ -69,6 +70,24 @@
                                                 @endforeach
                                             </select>
                                         </form>
+                                    </td>
+                                    <td>
+                                        @if(in_array($item->role, ['cashier', 'chef', 'waiter']))
+                                            <form action="{{ route('updateField', $item->id ) }}" method="POST">
+                                                @csrf
+                                                <input type="hidden" name="field" value="branch">
+                                                <select name="value" onchange="this.form.submit()" class="form-select">
+                                                    @foreach($branches as $branch)
+                                                        <option value="{{ $branch->id }}"
+                                                            {{ $item->branch_id == $branch->id ? 'selected' : '' }}>
+                                                            {{ $branch->name }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                            </form>
+                                        @else
+                                            <span class="text-muted">-</span>
+                                        @endif
                                     </td>
                                 </tr>
                             @endforeach
