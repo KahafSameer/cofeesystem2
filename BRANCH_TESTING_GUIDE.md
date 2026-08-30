@@ -75,9 +75,7 @@ admin/branch/status/{id} (branch.status)
   `branch_id = null` for `admin`/`user`.
 - `changeProfilePage` → selects `branch_id`, passes Active `$branches`.
 - `updateField` → handles `field=branch` (assign branch), clears branch when role
-  becomes `admin`/`user`, and blocks assigning a branch-based role if no branch set.
-
-Related views:
+  becomes `admin`/`user`, a
 - `resources/views/admin/profile/createprofile.blade.php` — Branch dropdown that
   appears/hides via `toggleBranchField()` JS based on selected role.
 - `resources/views/admin/profile/changeprofile.blade.php` — per-user Branch `<select>`
