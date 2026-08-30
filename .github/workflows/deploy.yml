@@ -90,8 +90,20 @@ jobs:
 
           cd /var/www/coffeepos/cofeesystem2
 
+          # Ensure Laravel runtime directories exist.
+          sudo mkdir -p storage/framework/cache
+          sudo mkdir -p storage/framework/sessions
+          sudo mkdir -p storage/framework/views
+          sudo mkdir -p storage/logs
+          sudo mkdir -p bootstrap/cache
+
+          # ubuntu runs Artisan/composer.
+          # www-data runs PHP-FPM.
+          # Give both users the required access.
+          sudo chown -R ubuntu:www-data storage bootstrap/cache
+          sudo chmod -R ug+rwX storage bootstrap/cache
+
           # Put application into maintenance mode.
-          # If anything fails after this point, always bring the app back up.
           php artisan down --retry=60 || true
           trap 'php artisan up || true' EXIT
 
@@ -105,7 +117,7 @@ jobs:
           # Apply database changes.
           php artisan migrate --force
 
-          # Clear old cached configuration/routes/views.
+          # Clear old caches.
           php artisan config:clear
           php artisan route:clear
           php artisan view:clear
@@ -114,13 +126,12 @@ jobs:
           php artisan config:cache
           php artisan view:cache
 
-          # NOTE:
-          # route:cache is intentionally disabled for now because the
-          # current application has a route-name serialization conflict.
-          # We will fix that conflict separately and enable route:cache later.
+          # route:cache is disabled because the application
+          # currently has duplicate route names.
 
-          # Make Laravel writable directories owned by PHP-FPM.
-          sudo chown -R www-data:www-data storage bootstrap/cache
+          # Ensure correct permissions remain after deployment.
+          sudo chown -R ubuntu:www-data storage bootstrap/cache
+          sudo chmod -R ug+rwX storage bootstrap/cache
 
           # Bring application back online.
           php artisan up
@@ -128,7 +139,6 @@ jobs:
           # Reload PHP-FPM.
           sudo systemctl reload php8.3-fpm
           REMOTE
-
       # ---------------------------------------------------------------
       # Health check
       # ---------------------------------------------------------------
