@@ -78,6 +78,8 @@ jobs:
       # ---------------------------------------------------------------
       # Laravel deployment steps on EC2
       # ---------------------------------------------------------------
+
+
       - name: Run Laravel deploy steps
         env:
           REMOTE_USER: ${{ secrets.EC2_USERNAME }}
@@ -90,53 +92,76 @@ jobs:
 
           cd /var/www/coffeepos/cofeesystem2
 
-          # Ensure Laravel runtime directories exist.
+          # -----------------------------------------------------------
+          # Ensure Laravel runtime directories exist
+          # -----------------------------------------------------------
           sudo mkdir -p storage/framework/cache
           sudo mkdir -p storage/framework/sessions
           sudo mkdir -p storage/framework/views
           sudo mkdir -p storage/logs
           sudo mkdir -p bootstrap/cache
 
-          # ubuntu runs Artisan/composer.
-          # www-data runs PHP-FPM.
-          # Give both users the required access.
+          # -----------------------------------------------------------
+          # Permissions
+          #
+          # ubuntu = deployment user
+          # www-data = PHP-FPM user
+          # -----------------------------------------------------------
           sudo chown -R ubuntu:www-data storage bootstrap/cache
           sudo chmod -R ug+rwX storage bootstrap/cache
 
-          # Put application into maintenance mode.
+          # -----------------------------------------------------------
+          # Maintenance mode
+          # -----------------------------------------------------------
           php artisan down --retry=60 || true
+
+          # Always try to bring application back online
+          # if something fails.
           trap 'php artisan up || true' EXIT
 
-          # Install/update PHP dependencies.
+          # -----------------------------------------------------------
+          # Composer
+          # -----------------------------------------------------------
           composer install \
             --no-dev \
             --no-interaction \
             --prefer-dist \
             --optimize-autoloader
 
-          # Apply database changes.
+          # -----------------------------------------------------------
+          # Database
+          # -----------------------------------------------------------
           php artisan migrate --force
 
-          # Clear old caches.
-          php artisan config:clear
-          php artisan route:clear
-          php artisan view:clear
+          # -----------------------------------------------------------
+          # Clear old Laravel caches
+          # -----------------------------------------------------------
+          php artisan optimize:clear
 
-          # Rebuild caches.
+          # -----------------------------------------------------------
+          # Rebuild safe caches
+          # -----------------------------------------------------------
           php artisan config:cache
           php artisan view:cache
 
-          # route:cache is disabled because the application
-          # currently has duplicate route names.
-
-          # Ensure correct permissions remain after deployment.
+          # DO NOT run route:cache yet.
+          # Your application currently has duplicate route names.
+          # We will fix that separately.
+          
+          # -----------------------------------------------------------
+          # Final permissions
+          # -----------------------------------------------------------
           sudo chown -R ubuntu:www-data storage bootstrap/cache
           sudo chmod -R ug+rwX storage bootstrap/cache
 
-          # Bring application back online.
+          # -----------------------------------------------------------
+          # Application online
+          # -----------------------------------------------------------
           php artisan up
 
-          # Reload PHP-FPM.
+          # -----------------------------------------------------------
+          # Reload PHP-FPM
+          # -----------------------------------------------------------
           sudo systemctl reload php8.3-fpm
           REMOTE
       # ---------------------------------------------------------------
