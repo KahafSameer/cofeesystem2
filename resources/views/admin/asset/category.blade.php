@@ -1,7 +1,7 @@
 @extends('admin.layouts.master')
 @section('content')
 <div class="container mt-4">
-    <h2 class="fw-bold text-end mb-3">Manages Asset Categories</h2>
+    <h2 class="fw-bold text-end mb-3">Manage Assetesssss Categories</h2>
 
     @if (session('success'))
         <div class="alert alert-success mt-2">{{ session('success') }}</div>
