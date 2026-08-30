@@ -1011,32 +1011,58 @@ class WaiterController extends Controller
         ]);
     }
 
-    //Request the bill: open -> bill_requested (stops further additions server-side)
+    //Request the bill: open -> bill_requested (stops further additions server-side).
+    //Idempotent: concurrent double-submit cannot flip the state twice.
     public function requestBill($sessionId)
     {
-        $session = $this->verifiableSession($sessionId);
+        $waiter = $this->waiter();
 
-        if (! $session->isOpen()) {
-            return back()->with('alert', [
-                'type'    => 'error',
-                'message' => 'This session is no longer awaiting the bill.',
-            ]);
+        $result = DB::transaction(function () use ($sessionId, $waiter) {
+            $session = CustomerSession::where('id', $sessionId)
+                ->where('waiter_id', $waiter->id)
+                ->where('branch_id', $waiter->branch_id)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $session) {
+                return null;
+            }
+
+            if ($session->isBillRequested()) {
+                return ['already', $session];
+            }
+
+            if (! $session->isOpen()) {
+                return ['not_open', $session];
+            }
+
+            if ($session->ordersCount() === 0) {
+                return ['empty', $session];
+            }
+
+            $session->status            = CustomerSession::STATUS_BILL_REQUESTED;
+            $session->bill_requested_at = now();
+            $session->save();
+
+            return ['ok', $session];
+        });
+
+        if ($result === null) {
+            abort(404);
         }
 
-        if ($session->ordersCount() === 0) {
-            return back()->with('alert', [
-                'type'    => 'error',
-                'message' => 'Cannot request the bill for an empty session.',
-            ]);
-        }
+        [$outcome, $session] = $result;
 
-        $session->status            = CustomerSession::STATUS_BILL_REQUESTED;
-        $session->bill_requested_at = now();
-        $session->save();
+        $messages = [
+            'already'  => 'The bill for session #' . $session->session_code . ' has already been requested.',
+            'not_open' => 'This session is no longer open.',
+            'empty'    => 'Cannot request the bill for an empty session.',
+            'ok'       => 'Bill requested for session #' . $session->session_code . '. No more items can be added.',
+        ];
 
         return back()->with('alert', [
-            'type'    => 'success',
-            'message' => 'Bill requested for session #' . $session->session_code . '. No more items can be added.',
+            'type'    => $outcome === 'ok' ? 'success' : 'error',
+            'message' => $messages[$outcome] ?? 'Could not request the bill for this session.',
         ]);
     }
 }

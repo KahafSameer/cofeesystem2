@@ -30,6 +30,15 @@
                 </a>
             @endif
 
+            @if (in_array(auth()->user()->role, ['cashier', 'admin'], true))
+                <a href="{{ route('cashier.sessions') }}" class="btn mb-2" style="background-color: #66401d; color: white;">
+                    <i class="fa-solid fa-receipt me-2"></i> Bill Requests
+                    @if (($cashierPendingBills ?? 0) > 0)
+                        <span class="badge bg-danger rounded-pill ms-1">{{ $cashierPendingBills }}</span>
+                    @endif
+                </a>
+            @endif
+
             @if (auth()->user()->role === 'admin' || auth()->user()->role === 'cashier')
                 <button class="btn d-flex justify-content-between align-items-center mb-2"
                     onclick="toggleDropdown('catmenu')"

@@ -12,6 +12,9 @@
                 <div class="d-flex align-items-center gap-2">
                     <a href="{{ route('cashier.sessions') }}" class="btn btn-running btn-sm">
                         <i class="fa-solid fa-receipt me-1"></i> Running Bills
+                        @if (($pendingBillCount ?? 0) > 0)
+                            <span class="badge bg-danger rounded-pill ms-1">{{ $pendingBillCount }}</span>
+                        @endif
                     </a>
                     <button type="button" class="btn btn-new-order btn-sm" id="newOrderButton">
                         <i class="fa-solid fa-plus me-1"></i> NEW ORDER

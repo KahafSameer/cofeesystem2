@@ -14,6 +14,13 @@
             $open = $sessions->filter(fn ($s) => $s->isOpen());
         @endphp
 
+        @if ($isAdmin)
+            <div class="alert alert-light border d-flex align-items-center">
+                <i class="fa-solid fa-eye me-2"></i>
+                <span>Showing bills from <strong>all branches</strong> (admin full access).</span>
+            </div>
+        @endif
+
         {{-- Payable: waiter requested the bill --}}
         <div class="card mb-4 shadow-sm">
             <div class="card-header bg-warning text-dark">
@@ -28,6 +35,7 @@
                             <thead class="table-light">
                                 <tr>
                                     <th>Session</th>
+                                    <th>Branch</th>
                                     <th>Waiter</th>
                                     <th>Tickets</th>
                                     <th class="text-end">Total</th>
@@ -46,6 +54,7 @@
                                             </a>
                                             <div class="small text-muted">{{ $session->opened_at?->format('M j, g:i A') }}</div>
                                         </td>
+                                        <td><span class="badge bg-dark">{{ $session->branch?->name ?? '—' }}</span></td>
                                         <td>{{ $session->waiter?->name ?? '—' }}</td>
                                         <td>{{ $sum['orders'] }}</td>
                                         <td class="text-end fw-bold">PKR {{ number_format($sum['total'], 2) }}</td>
@@ -77,6 +86,7 @@
                             <thead class="table-light">
                                 <tr>
                                     <th>Session</th>
+                                    <th>Branch</th>
                                     <th>Waiter</th>
                                     <th>Tickets</th>
                                     <th class="text-end">Running Total</th>
@@ -95,6 +105,7 @@
                                             </a>
                                             <div class="small text-muted">{{ $session->opened_at?->format('M j, g:i A') }}</div>
                                         </td>
+                                        <td><span class="badge bg-dark">{{ $session->branch?->name ?? '—' }}</span></td>
                                         <td>{{ $session->waiter?->name ?? '—' }}</td>
                                         <td>{{ $sum['orders'] }}</td>
                                         <td class="text-end">PKR {{ number_format($sum['total'], 2) }}</td>

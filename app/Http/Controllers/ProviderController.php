@@ -43,8 +43,11 @@ public function callback($provider){
     if(Auth::user()->role == 'chef'){
         return to_route('chef.dashboard');
     }
-    if(Auth::user()->role == 'admin' || Auth::user()->role == 'cashier'){
+    if(Auth::user()->role == 'admin'){
         return to_route('adminDashboard');
+    }
+    if(Auth::user()->role == 'cashier'){
+        return to_route('cashier.index');
     }
     if(Auth::user()->role == 'user'){
         return to_route('userDashboard');

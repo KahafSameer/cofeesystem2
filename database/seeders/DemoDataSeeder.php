@@ -59,6 +59,13 @@ class DemoDataSeeder extends Seeder
             'status' => 'Active', 'branch_id' => $mall->id,
         ]);
 
+        // Cashier for GT Road Branch so running bills requested there are visible
+        // to a same-branch cashier in the Cashier Portal.
+        User::firstOrCreate(['email' => 'cashier2@gmail.com'], [
+            'name' => 'Cashier GT', 'password' => $password, 'role' => 'cashier',
+            'status' => 'Active', 'branch_id' => $gt->id,
+        ]);
+
         // ---- Category + products ----
         if (Category::where('name', 'Coffee')->doesntExist()) {
             $coffee = Category::create(['name' => 'Coffee']);

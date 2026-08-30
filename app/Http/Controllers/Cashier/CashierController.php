@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Cashier;
 
 use App\Http\Controllers\Controller;
+use App\Models\Branch;
 use App\Models\Cart;
 use App\Models\CashierDraft;
 use App\Models\Category;
@@ -25,6 +26,23 @@ class CashierController extends Controller
         'take_away' => CashierDraft::ORDER_TYPE_TAKE_AWAY,
         'delivery'  => CashierDraft::ORDER_TYPE_DELIVERY,
     ];
+
+    /**
+     * Branches a cashier may see/operate sessions for.
+     * - Admin (full-access till operator): every active branch.
+     * - Cashier: strictly the authenticated branch.
+     * Branch isolation for cashiers must never be relaxed.
+     */
+    private function allowedSessionBranchIds(): array
+    {
+        $user = auth()->user();
+
+        if ($user->role === 'admin') {
+            return Branch::query()->pluck('id')->all();
+        }
+
+        return [$user->branch_id];
+    }
 
     /**
      * POS main page with the Active Tickets strip and the current ticket.
@@ -85,6 +103,12 @@ class CashierController extends Controller
         // Per-ticket summaries for the Active Tickets strip.
         $summary = $this->draftSummaries($drafts);
 
+        // Surfaced on the Running Bills button so the cashier knows a waiter
+        // has requested a bill without leaving the POS screen.
+        $pendingBillCount = CustomerSession::whereIn('branch_id', $this->allowedSessionBranchIds())
+            ->where('status', CustomerSession::STATUS_BILL_REQUESTED)
+            ->count();
+
         $deliveryLocations = DeliveryFees::all();
 
         return view('cashier.pos.index', [
@@ -104,6 +128,7 @@ class CashierController extends Controller
             'deliveryFee'       => $deliveryFee,
             'total'             => $total,
             'deliveryLocations' => $deliveryLocations,
+            'pendingBillCount'  => $pendingBillCount,
         ]);
     }
 
@@ -626,8 +651,8 @@ class CashierController extends Controller
      */
     public function sessions()
     {
-        $sessions = CustomerSession::with(['waiter'])
-            ->where('branch_id', auth()->user()->branch_id)
+        $sessions = CustomerSession::with(['waiter', 'branch'])
+            ->whereIn('branch_id', $this->allowedSessionBranchIds())
             ->whereIn('status', [CustomerSession::STATUS_OPEN, CustomerSession::STATUS_BILL_REQUESTED])
             ->orderByDesc('opened_at')
             ->get();
@@ -650,6 +675,7 @@ class CashierController extends Controller
         return view('cashier.sessions.index', [
             'sessions' => $sessions,
             'summary'  => $summary,
+            'isAdmin'  => auth()->user()->role === 'admin',
         ]);
     }
 
@@ -658,8 +684,8 @@ class CashierController extends Controller
      */
     public function sessionDetails($sessionId)
     {
-        $session = CustomerSession::where('id', $sessionId)
-            ->where('branch_id', auth()->user()->branch_id)
+        $session = CustomerSession::whereIn('branch_id', $this->allowedSessionBranchIds())
+            ->where('id', $sessionId)
             ->firstOrFail();
 
         $orders = Order::with(['product'])
@@ -698,8 +724,8 @@ class CashierController extends Controller
 
         $branchId = auth()->user()->branch_id;
 
-        $pending = CustomerSession::where('id', $sessionId)
-            ->where('branch_id', $branchId)
+        $pending = CustomerSession::whereIn('branch_id', $this->allowedSessionBranchIds())
+            ->where('id', $sessionId)
             ->first();
 
         if (! $pending) {
@@ -707,8 +733,8 @@ class CashierController extends Controller
         }
 
         $outcome = DB::transaction(function () use ($validated, $sessionId, $branchId) {
-            $session = CustomerSession::where('id', $sessionId)
-                ->where('branch_id', $branchId)
+            $session = CustomerSession::whereIn('branch_id', $this->allowedSessionBranchIds())
+                ->where('id', $sessionId)
                 ->lockForUpdate()
                 ->first();
 
@@ -782,9 +808,19 @@ class CashierController extends Controller
     public function sessionBill($sessionId)
     {
         $session = CustomerSession::with(['waiter'])
+            ->whereIn('branch_id', $this->allowedSessionBranchIds())
             ->where('id', $sessionId)
-            ->where('branch_id', auth()->user()->branch_id)
             ->firstOrFail();
+
+        // A bill can only be printed once the waiter has requested it
+        // (or after the session has been settled). Still-open sessions cannot
+        // be printed so the bill-requested lifecycle is respected.
+        if ($session->isOpen()) {
+            return redirect()->route('cashier.sessionDetails', $session->id)->with('alert', [
+                'type'    => 'error',
+                'message' => 'This bill can only be printed after the waiter has requested it.',
+            ]);
+        }
 
         $orders = Order::with(['product'])
             ->where('session_id', $session->id)
