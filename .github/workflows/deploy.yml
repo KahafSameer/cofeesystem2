@@ -12,6 +12,7 @@ concurrency:
 jobs:
   build-and-deploy:
     name: Build & Deploy
+    environment: EC2_HOST
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
