@@ -1,0 +1,145 @@
+name: Deploy to AWS EC2
+
+# Runs automatically on every push to `main` and can also be triggered
+# manually from the Actions tab.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Only one deploy at a time; a queued push waits for the current one.
+concurrency:
+  group: ec2-deploy
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ------------------------------------------------------------------
+      # PHP on the runner (only needed so `composer install` can run before
+      # the built files are pushed to the server).
+      # ------------------------------------------------------------------
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+
+      - name: Install production Composer dependencies
+        run: composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+
+      # ------------------------------------------------------------------
+      # Build the Vite/Tailwind frontend. `public/build` is git-ignored, so
+      # it must be produced here and shipped to the server via rsync.
+      # ------------------------------------------------------------------
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build frontend assets
+        run: npm run build
+
+      # ------------------------------------------------------------------
+      # SSH connection. EC2_SSH_KEY is the PRIVATE key (PEM or OpenSSH) for
+      # the key pair you attached to the EC2 instance.
+      # ------------------------------------------------------------------
+      - name: Prepare SSH key
+        env:
+          SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/ec2_key
+          chmod 600 ~/.ssh/ec2_key
+          ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
+      # ------------------------------------------------------------------
+      # Copy the code to /var/www/coffeepos. Excluded on purpose:
+      #   .env*        -> the server keeps its own .env (never overwritten)
+      #   storage/     -> logs, sessions, caches, user uploads live on server
+      #   bootstrap/cache, vendor, node_modules, tests -> server rebuilds them
+      #   build-asset dirs previously noted
+      #
+      # productImages/ adminProfile/ customerProfile/ are RUNTIME UPLOAD
+      # dirs (admins/users upload to public/...). They are excluded so
+      # `--delete` cannot wipe uploaded photos on a redeploy. Ship new
+      # committed images there manually once.
+      # ------------------------------------------------------------------
+      - name: Sync files to server
+        env:
+          REMOTE_USER: ${{ secrets.EC2_USERNAME }}
+          REMOTE_HOST: ${{ secrets.EC2_HOST }}
+        run: |
+          rsync -azh --delete \
+            -e "ssh -i $HOME/.ssh/ec2_key -o StrictHostKeyChecking=accept-new" \
+            --exclude '.git*' \
+            --exclude '.env*' \
+            --exclude 'storage/' \
+            --exclude 'bootstrap/cache/' \
+            --exclude 'vendor/' \
+            --exclude 'node_modules/' \
+            --exclude 'tests/' \
+            --exclude '.github/' \
+            --exclude 'productImages/' \
+            --exclude 'adminProfile/' \
+            --exclude 'customerProfile/' \
+            ./ \
+            "$REMOTE_USER@$REMOTE_HOST:/var/www/coffeepos/"
+
+      # ------------------------------------------------------------------
+      # Post-sync maintenance happens ON the server (no app restarts needed,
+      # just an fpm reload). If you install a different PHP version, change
+      # `php8.3-fpm` to match (e.g. php8.2-fpm).
+      # ------------------------------------------------------------------
+      - name: Run artisan deploy steps on the server
+        env:
+          REMOTE_USER: ${{ secrets.EC2_USERNAME }}
+          REMOTE_HOST: ${{ secrets.EC2_HOST }}
+        run: |
+          ssh -i "$HOME/.ssh/ec2_key" -o StrictHostKeyChecking=accept-new \
+            "$REMOTE_USER@$REMOTE_HOST" 'bash -s' <<'REMOTE'
+          set -e
+          cd /var/www/coffeepos
+
+          php artisan down --retry=60 || true
+
+          composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+
+          php artisan migrate --force
+
+          php artisan config:clear
+          php artisan route:clear
+          php artisan view:clear
+          php artisan config:cache
+          php artisan route:cache
+          php artisan view:cache
+
+          sudo chown -R www-data:www-data storage bootstrap/cache
+
+          php artisan up
+
+          sudo systemctl reload php8.3-fpm
+          REMOTE
+
+      # ------------------------------------------------------------------
+      # Optional: ping a public health endpoint after deploy. Set the
+      # EC2_HEALTH_URL secret (e.g. https://pos.example.com/up) to enable.
+      # ------------------------------------------------------------------
+      - name: Health check
+        if: ${{ secrets.EC2_HEALTH_URL != '' }}
+        env:
+          HEALTH_URL: ${{ secrets.EC2_HEALTH_URL }}
+        run: |
+          curl -fsS -o /dev/null -w "HTTP %{http_code}\n" -m 30 "$HEALTH_URL"
