@@ -73,7 +73,7 @@ class CashierSessionVisibilityTest extends BaseTestCase
             'status'         => 1,
             'payment_method' => 'cash',
             'order_type'     => 1,
-            'size'           => $size ? $size->size : 'Medium',
+            'size'           => $size ? $size->size : 'Standard',
             'notes'          => '',
         ]);
     }

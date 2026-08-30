@@ -108,7 +108,7 @@
                                 @foreach ($productbyCategory as $item)
                                     <div class="col-md-4 col-6 mb-4">
                                         @php
-                                            $defaultSize = $item->sizes[0]->size ?? 'Medium';
+                                            $defaultSize = $item->sizes[0]->size ?? 'Standard'; // Default to 'Standard' if no sizes are available
                                         @endphp
                                         <form action="{{ route('cashier.cart.add') }}" method="POST" class="h-100 d-flex flex-column">
                                             @csrf

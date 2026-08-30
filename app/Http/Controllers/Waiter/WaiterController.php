@@ -194,7 +194,7 @@ class WaiterController extends Controller
         $size = $validated['size'] ?? '';
         if (empty($size)) {
             $firstSize = ProductSize::where('product_id', $validated['product_id'])->first();
-            $size = $firstSize?->size ?? 'Medium';
+            $size = $firstSize?->size ?? 'Standard'; // Default to 'Standard' if no size found
         }
 
         $cartItem = Cart::firstOrNew([
@@ -657,7 +657,7 @@ class WaiterController extends Controller
         $size = $validated['size'] ?? '';
         if (empty($size)) {
             $firstSize = ProductSize::where('product_id', $product->id)->first();
-            $size = $firstSize?->size ?? 'Medium';
+            $size = $firstSize?->size ?? 'Standard'; // Default to 'Standard' if no size found
         }
 
         // Compute discounted unit price
