@@ -64,7 +64,7 @@ class CashierTicketFlowTest extends BaseTestCase
         $product = $products[$offset % max(1, $products->count())];
         $size = ProductSize::where('product_id', $product->id)->first();
 
-        return [$product, $size ? $size->size : 'Medium'];
+        return [$product, $size ? $size->size : 'Standard'];
     }
 
     private function newTicket(User $cashier): CashierDraft

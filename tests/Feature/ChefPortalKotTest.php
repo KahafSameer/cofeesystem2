@@ -58,7 +58,7 @@ class ChefPortalKotTest extends BaseTestCase
         Order::create([
             'product_id' => $product->id, 'user_id' => $waiter->id, 'waiter_id' => $waiter->id,
             'branch_id' => $branch2->id, 'session_id' => $session->id, 'order_code' => $code1,
-            'quantity' => 2, 'totalprice' => 5.00, 'status' => 1, 'size' => 'Large', 'notes' => 'Less sugar',
+            'quantity' => 2, 'totalprice' => 5.00, 'status' => 1, 'size' => 'Double Shot', 'notes' => 'Less sugar',
         ]);
 
         // Step 4: verify order fields
@@ -97,7 +97,7 @@ class ChefPortalKotTest extends BaseTestCase
             ->assertSee('SES-1001-' . $suffix)
             ->assertSee('Ali')
             ->assertSee($product->name)
-            ->assertSee('Large')
+            ->assertSee('Double Shot')
             ->assertSee('Less sugar')
             ->assertDontSee('Payment Slip');
 
@@ -119,7 +119,7 @@ class ChefPortalKotTest extends BaseTestCase
         Order::create([
             'product_id' => $product->id, 'user_id' => $waiter->id, 'waiter_id' => $waiter->id,
             'branch_id' => $branch2->id, 'session_id' => $session->id, 'order_code' => $code2,
-            'quantity' => 1, 'totalprice' => 8.00, 'status' => 1, 'size' => 'Medium', 'notes' => '',
+            'quantity' => 1, 'totalprice' => 8.00, 'status' => 1, 'size' => 'Standard', 'notes' => '',
         ]);
         $this->assertDatabaseHas('orders', ['order_code' => $code2, 'session_id' => $session->id, 'status' => 1]);
 

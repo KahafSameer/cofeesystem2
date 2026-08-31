@@ -86,7 +86,7 @@
                         @foreach ($productbyCategory as $item)
                             <div class="col-md-3 mb-3">
                                 @php
-                                    $defaultSize = $item->sizes[0]->size ?? 'M';
+                                    $defaultSize = $item->sizes[0]->size ?? 'Standard';
                                     $selectedSize = old('size', $defaultSize);
                                 @endphp
                                 <form action="{{ route('additems') }}" method="POST" class="h-100 d-flex flex-column">

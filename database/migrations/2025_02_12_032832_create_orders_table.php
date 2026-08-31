@@ -24,7 +24,7 @@ return new class extends Migration
             $table->timestamps();
             $table->string('payment_method')->nullable();
             $table->string('order_type')->nullable();
-            $table->enum('size', ['Small', 'Medium', 'Large'])->default('Medium');
+            $table->enum('size', ['Single Shot', 'Double Shot', 'Standard'])->default('Standard');
             $table->text('notes')->nullable();
             $table->unsignedBigInteger('delivery_location_id')->nullable();
 
