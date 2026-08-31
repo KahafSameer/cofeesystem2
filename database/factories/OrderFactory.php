@@ -29,7 +29,7 @@ class OrderFactory extends Factory
             // 'totalprice' => fake()->randomFloat(2,10,500),
             // 'payment_method' => fake()->randomElement(['cash','card','mobile']),
             // 'order_type' => fake()->randomElement(['eat-in','takeaway','delivery']),
-            // 'size' => fake()->randomElement(['Single Shot','Standard','Double Shot']),
+            // 'size' => fake()->randomElement(['Small','Medium','Large']),
             // 'notes' => fake()->optional()->sentence(),
         ];
     }

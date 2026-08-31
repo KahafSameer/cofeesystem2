@@ -204,7 +204,7 @@ class ProductController extends Controller
 
         $validated = $request->validate([
             'sizes'    => 'required|array',
-            'sizes.*'  => 'required|string|in:Single Shot,Standard,Double Shot',
+            'sizes.*'  => 'required|string|in:Small,Medium,Large',
             'prices'   => 'required|array',
             'prices.*' => 'required|numeric|min:0',
         ]);

@@ -78,11 +78,11 @@ class DemoDataSeeder extends Seeder
             ];
 
             $products = [
-                ['name' => 'Macha', 'qty' => 100, 'image' => $img[0], 'desc' => 'Iced matcha latte', 'sizes' => ['Single Shot' => 350, 'Standard' => 450, 'Double Shot' => 550]],
-                ['name' => 'Lava Cake', 'qty' => 50, 'image' => $img[1], 'desc' => 'Chocolate lava cake', 'sizes' => ['Single Shot' => 400, 'Standard' => 500, 'Double Shot' => 600]],
-                ['name' => 'Cappuccino', 'qty' => 120, 'image' => $img[2], 'desc' => 'Classic cappuccino', 'sizes' => ['Single Shot' => 300, 'Standard' => 400, 'Double Shot' => 500]],
-                ['name' => 'Americano', 'qty' => 90, 'image' => $img[3], 'desc' => 'Black coffee', 'sizes' => ['Single Shot' => 250, 'Standard' => 350, 'Double Shot' => 450]],
-                ['name' => 'Mocha', 'qty' => 80, 'image' => $img[0], 'desc' => 'Chocolate espresso', 'sizes' => ['Single Shot' => 380, 'Standard' => 480, 'Double Shot' => 580]],
+                ['name' => 'Macha', 'qty' => 100, 'image' => $img[0], 'desc' => 'Iced matcha latte', 'sizes' => ['Small' => 350, 'Medium' => 450, 'Large' => 550]],
+                ['name' => 'Lava Cake', 'qty' => 50, 'image' => $img[1], 'desc' => 'Chocolate lava cake', 'sizes' => ['Small' => 400, 'Medium' => 500, 'Large' => 600]],
+                ['name' => 'Cappuccino', 'qty' => 120, 'image' => $img[2], 'desc' => 'Classic cappuccino', 'sizes' => ['Small' => 300, 'Medium' => 400, 'Large' => 500]],
+                ['name' => 'Americano', 'qty' => 90, 'image' => $img[3], 'desc' => 'Black coffee', 'sizes' => ['Small' => 250, 'Medium' => 350, 'Large' => 450]],
+                ['name' => 'Mocha', 'qty' => 80, 'image' => $img[0], 'desc' => 'Chocolate espresso', 'sizes' => ['Small' => 380, 'Medium' => 480, 'Large' => 580]],
             ];
 
             foreach ($products as $p) {

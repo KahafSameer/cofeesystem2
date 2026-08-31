@@ -9,7 +9,7 @@
         <div id="sizePriceContainer">
             <div class="row mb-2 size-price-row">
                 <div class="col-md-5">
-                    <input type="text" name="sizes[]" class="form-control" placeholder="Size (e.g. Single Shot)" required>
+                    <input type="text" name="sizes[]" class="form-control" placeholder="Size (e.g. Small)" required>
                 </div>
                 <div class="col-md-5">
                     <input type="number" name="prices[]" class="form-control" step="10" placeholder="Price (PKR)" required>
@@ -40,7 +40,7 @@
 
         row.innerHTML = `
             <div class="col-md-5">
-                <input type="text" name="sizes[]" class="form-control" placeholder="Size (e.g. Standard)" required>
+                <input type="text" name="sizes[]" class="form-control" placeholder="Size (e.g. Medium)" required>
             </div>
             <div class="col-md-5">
                 <input type="number" name="prices[]" class="form-control" step="0.01" placeholder="Price (PKR)" required>

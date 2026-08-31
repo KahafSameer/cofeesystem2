@@ -244,7 +244,7 @@ class CashierController extends Controller
 
         $size = $validated['size'] ?? '';
         if (empty($size)) {
-            $size = optional(ProductSize::where('product_id', $validated['product_id'])->first())->size ?? 'Standard';
+            $size = optional(ProductSize::where('product_id', $validated['product_id'])->first())->size ?? 'Medium';
         }
 
         $cartItem = Cart::firstOrNew([

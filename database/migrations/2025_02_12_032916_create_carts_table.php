@@ -17,7 +17,7 @@ return new class extends Migration
             $table->unsignedBigInteger('user_id');
             $table->integer('qty')->default(1);
             $table->string('orderCode');
-            $table->enum('size', ['Single Shot', 'Standard', 'Double Shot'])->default('Standard');
+            $table->enum('size', ['Small', 'Medium', 'Large'])->default('Medium');
             $table->text('notes')->nullable();
             $table->timestamps();
 

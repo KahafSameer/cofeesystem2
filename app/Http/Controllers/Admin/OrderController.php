@@ -306,7 +306,7 @@ class OrderController extends Controller
         $size = $validated['size'] ?? '';
         if (empty($size)) {
             $firstSize = \App\Models\ProductSize::where('product_id', $validated['product_id'])->first();
-            $size = $firstSize?->size ?? 'Standard'; // Default to 'Standard' if no size found
+            $size = $firstSize?->size ?? 'Medium';
         }
 
         $cartItem = Cart::firstOrNew([
