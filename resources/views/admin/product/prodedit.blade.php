@@ -77,7 +77,7 @@
 
                                 <div class="col-md-6 mb-4">
                                     <label class="form-label fw-bold">Price (PKR)</label>
-                                        <input type="text" step="10" id="price" name="price" class="form-control" placeholder="Choose size to see price" value="" >
+                                        <input type="text" step="1" id="price" name="price" class="form-control" placeholder="Choose size to see price" value="" >
                                     @error('price') <small class="text-danger">{{ $message }}</small> @enderror
                                 </div>
 
