@@ -842,6 +842,7 @@ class CashierController extends Controller
             'taxAmount'     => $taxAmount,
             'total'         => $total,
             'settlement'    => $session->settlementRecord(),
+            'branchName'    => auth()->user()->branch?->name,
         ]);
     }
 }

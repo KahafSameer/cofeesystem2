@@ -598,11 +598,18 @@ class OrderController extends Controller
             $deliveryFee = $location ? $location->fees : 0;
         }
 
+        $cashierUser = $records->first()->CashierID
+            ? \App\Models\User::find($records->first()->CashierID)
+            : null;
+
         return [
             'records'     => $records,
             'subTotalAmt' => $subTotalAmt,
             'deliveryFee' => $deliveryFee,
             'taxAmount'   => $taxAmount,
+            'cashierName' => $cashierUser?->name,
+            'branchName'  => $order->branch?->name,
+            'orderType'   => $order->order_type,
         ];
     }
 }
