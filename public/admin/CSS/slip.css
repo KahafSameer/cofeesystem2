@@ -23,7 +23,7 @@ body {
     width: 100%;
     margin: 10px auto;
     background: #fff;
-    padding: 12px 20px 16px;
+    padding: 8px 20px 16px;
     border: 1px solid #ddd;
 }
 
@@ -32,7 +32,7 @@ body {
    ============================================ */
 .receipt-header {
     text-align: center;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
 }
 
 /* Logo without circle */
@@ -40,13 +40,13 @@ body {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto 6px;
+    margin: 0 auto 2px;
 }
 
 .receipt-logo {
     display: block;
-    width: 240px;
-    height: 240px;
+    width: 353px;
+    height: 180px;
     object-fit: contain;
 }
 
@@ -65,8 +65,8 @@ body {
     font-weight: 900;
     letter-spacing: 4px;
     text-transform: uppercase;
-    margin-bottom: 6px;
-    margin-top: 4px;
+    margin-bottom: 4px;
+    margin-top: 0;
     color: #1a1a1a;
 }
 
@@ -76,7 +76,7 @@ body {
     align-items: center;
     justify-content: center;
     gap: 10px;
-    margin-bottom: 10px;
+    margin-bottom: 6px;
 }
 
 .receipt-bean-divider::before,
@@ -100,7 +100,7 @@ body {
     align-items: center;
     gap: 24px;
     font-size: 13px;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
     flex-wrap: wrap;
 }
 
@@ -132,7 +132,7 @@ body {
 .receipt-separator {
     border: none;
     border-top: 1.5px dashed #aaa;
-    margin: 8px 0;
+    margin: 6px 0;
 }
 
 .receipt-separator-solid {
@@ -537,7 +537,7 @@ body {
         print-color-adjust: exact;
     }
 
-    .receipt-logo { width: 240px; height: 240px; }
+    .receipt-logo { width: 180px; height: 180px; }
     .receipt-cafe-name { font-size: 30px; }
     .receipt-total-row { font-size: 14px; }
     
