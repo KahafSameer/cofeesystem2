@@ -589,7 +589,7 @@ class OrderController extends Controller
 
         $subTotalAmt = $records->sum('total_price');
         $taxSetting  = TaxSetting::first();
-        $taxRate     = $taxSetting->tax_rate;
+        $taxRate     = $taxSetting->tax_rate ?? 0;
         $taxAmount   = ceil((($subTotalAmt * $taxRate) / 100) / $smallestUnit) * $smallestUnit;
 
         $deliveryFee = 0;
