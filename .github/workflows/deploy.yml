@@ -48,6 +48,30 @@ jobs:
           ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
 
       # ---------------------------------------------------------------
+      # Fix web-visible asset directory ownership before syncing
+      #
+      # Tracked static assets under public/images etc. can end up owned
+      # by www-data (e.g. after a prior run or an upload), which blocks
+      # the deployment user from rsync-ing over them. Reclaim the
+      # directories for the deploy user first so the sync can succeed,
+      # then let PHP-FPM still read them via the www-data group.
+      # ---------------------------------------------------------------
+      - name: Fix public asset directory permissions
+        env:
+          REMOTE_USER: ${{ secrets.EC2_USERNAME }}
+          REMOTE_HOST: ${{ secrets.EC2_HOST }}
+        run: |
+          ssh -i "$HOME/.ssh/ec2_key" \
+            -o StrictHostKeyChecking=accept-new \
+            "$REMOTE_USER@$REMOTE_HOST" 'bash -s' <<'REMOTE'
+          set -e
+          cd /var/www/coffeepos/cofeesystem2
+          sudo chown -R ubuntu:www-data public/images || true
+          sudo chmod -R ug+rwX public/images || true
+          sudo find public/images -type d -exec chmod g+s {} \; 2>/dev/null || true
+          REMOTE
+
+      # ---------------------------------------------------------------
       # Sync application to EC2
       #
       # IMPORTANT:
@@ -109,6 +133,13 @@ jobs:
           # -----------------------------------------------------------
           sudo chown -R ubuntu:www-data storage bootstrap/cache
           sudo chmod -R ug+rwX storage bootstrap/cache
+
+          # -----------------------------------------------------------
+          # Keep tracked public asset directories deploy-user writable
+          # (icons/logo images; group-readable by www-data).
+          # -----------------------------------------------------------
+          sudo chown -R ubuntu:www-data public/images || true
+          sudo chmod -R ug+rwX public/images || true
 
           # -----------------------------------------------------------
           # Maintenance mode
