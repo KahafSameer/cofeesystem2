@@ -12,15 +12,8 @@
     {{-- ===== HEADER ===== --}}
     <div class="receipt-header">
         <div class="receipt-logo-wrap">
-            @if(file_exists(public_path('images/logo.png')))
-                <img src="{{ asset('images/logo.png') }}" alt="V8 Cafe" class="receipt-logo">
-            @elseif(file_exists(public_path('images/logo.svg')))
-                <img src="{{ asset('images/logo.svg') }}" alt="V8 Cafe" class="receipt-logo">
-            @elseif(file_exists(resource_path('logo.png')))
-                <img src="{{ asset('logo.png') }}" alt="V8 Cafe" class="receipt-logo">
-            @else
-                <span class="receipt-logo-placeholder">YOUR LOGO<br>HERE</span>
-            @endif
+            <img src="{{ asset('images/logo.png') }}" alt="V8 Cafe" class="receipt-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+            <span class="receipt-logo-placeholder" style="display:none;">YOUR LOGO<br>HERE</span>
         </div>
 
         <div class="receipt-cafe-name">V8 Cafe</div>
