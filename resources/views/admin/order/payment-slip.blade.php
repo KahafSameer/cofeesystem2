@@ -5,8 +5,76 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>V8 Cafe — Receipt</title>
     <link rel="stylesheet" href="{{ asset('admin/CSS/slip.css') }}">
+    <script>
+        /**
+         * Waits for all receipt images to load before printing.
+         * Handles both already-loaded images and pending ones.
+         * Supports img.decode() with fallback for older browsers.
+         */
+        async function initiatePrintWhenReady() {
+            const receiptImages = document.querySelectorAll('.slip-container img');
+            const imagePromises = [];
+
+            for (const img of receiptImages) {
+                const promise = new Promise((resolve) => {
+                    // If already loaded and has content
+                    if (img.complete && img.naturalWidth > 0) {
+                        resolve();
+                        return;
+                    }
+
+                    // If already failed to load
+                    if (img.complete) {
+                        resolve();
+                        return;
+                    }
+
+                    // Wait for load or error event
+                    const handleLoad = () => {
+                        img.removeEventListener('load', handleLoad);
+                        img.removeEventListener('error', handleError);
+                        resolve();
+                    };
+
+                    const handleError = () => {
+                        img.removeEventListener('load', handleLoad);
+                        img.removeEventListener('error', handleError);
+                        resolve(); // Resolve even on error to continue
+                    };
+
+                    img.addEventListener('load', handleLoad);
+                    img.addEventListener('error', handleError);
+
+                    // Try decode() if supported
+                    if (img.decode && typeof img.decode === 'function') {
+                        img.decode().catch(() => {
+                            // Silently handle decode errors
+                        });
+                    }
+                });
+
+                imagePromises.push(promise);
+            }
+
+            // Wait for all images
+            await Promise.all(imagePromises);
+
+            // Additional delay to ensure render pipeline is complete
+            await new Promise(resolve => setTimeout(resolve, 300));
+
+            // Trigger print
+            window.print();
+        }
+
+        // Start when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initiatePrintWhenReady);
+        } else {
+            initiatePrintWhenReady();
+        }
+    </script>
 </head>
-<body onload="window.print();">
+<body>
 <div class="slip-container">
 
     {{-- ===== HEADER ===== --}}

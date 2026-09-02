@@ -19,8 +19,6 @@ use Illuminate\Support\Facades\DB;
 
 class CashierController extends Controller
 {
-    private const SMALLEST_UNIT = 10;
-
     private const ORDER_TYPE_MAP = [
         'eat_in'    => CashierDraft::ORDER_TYPE_EAT_IN,
         'take_away' => CashierDraft::ORDER_TYPE_TAKE_AWAY,
@@ -95,9 +93,9 @@ class CashierController extends Controller
             $itemCount = (int) $cartItems->sum('cart_qty');
 
             $subTotal = (float) $cartItems->sum(fn ($i) => (float) $i->discountPrice * (int) $i->cart_qty);
-            $taxAmount = $this->roundUp($subTotal * ($this->taxRate() / 100));
+            $taxAmount = round($subTotal * ($this->taxRate() / 100), 2);
             $deliveryFee = $this->deliveryFeeFor($current->delivery_location_id);
-            $total = $this->roundUp($subTotal + $taxAmount + $deliveryFee);
+            $total = round($subTotal + $taxAmount + $deliveryFee, 2);
         }
 
         // Per-ticket summaries for the Active Tickets strip.
@@ -432,9 +430,9 @@ class CashierController extends Controller
 
                 // Authoritative totals - never trust the client's totalAmount.
                 $subTotal = (float) $carts->sum('item_total');
-                $taxAmount = $this->roundUp($subTotal * ($this->taxRate() / 100));
+                $taxAmount = round($subTotal * ($this->taxRate() / 100), 2);
                 $deliveryFee = $this->deliveryFeeFor($deliveryLocationId);
-                $total = $this->roundUp($subTotal + $taxAmount + $deliveryFee);
+                $total = round($subTotal + $taxAmount + $deliveryFee, 2);
 
                 $paymentMethod = strtolower($validated['paymentMethod']);
                 $paidAmount = $paymentMethod === 'cash' ? (float) $validated['cashReceived'] : $total;
@@ -505,11 +503,6 @@ class CashierController extends Controller
     private function taxRate(): float
     {
         return (float) (optional(TaxSetting::first())->tax_rate ?? 0);
-    }
-
-    private function roundUp(float $value): float
-    {
-        return (float) ceil($value / self::SMALLEST_UNIT) * self::SMALLEST_UNIT;
     }
 
     private function deliveryFeeFor($deliveryLocationId): float
@@ -632,9 +625,9 @@ class CashierController extends Controller
             $row = $rows->get($draft->order_code);
             $itemCount = (int) ($row->item_count ?? 0);
             $subTotal = (float) ($row->subtotal ?? 0);
-            $taxAmount = $this->roundUp($subTotal * ($taxRate / 100));
+            $taxAmount = round($subTotal * ($taxRate / 100), 2);
             $deliveryFee = $this->deliveryFeeFor($draft->delivery_location_id);
-            $total = $this->roundUp($subTotal + $taxAmount + $deliveryFee);
+            $total = round($subTotal + $taxAmount + $deliveryFee, 2);
 
             $summary[$draft->order_code] = [
                 'item_count' => $itemCount,
@@ -659,8 +652,8 @@ class CashierController extends Controller
 
         $summary = $sessions->mapWithKeys(function ($session) {
             $subTotal = $session->subtotal();
-            $taxAmount = $this->roundUp($subTotal * ($this->taxRate() / 100));
-            $total = $this->roundUp($subTotal + $taxAmount);
+            $taxAmount = round($subTotal * ($this->taxRate() / 100), 2);
+            $total = round($subTotal + $taxAmount, 2);
 
             return [
                 $session->id => [
@@ -696,8 +689,8 @@ class CashierController extends Controller
         $groupedOrders = $orders->groupBy('order_code');
 
         $subTotal = $session->subtotal();
-        $taxAmount = $this->roundUp($subTotal * ($this->taxRate() / 100));
-        $total = $this->roundUp($subTotal + $taxAmount);
+        $taxAmount = round($subTotal * ($this->taxRate() / 100), 2);
+        $total = round($subTotal + $taxAmount, 2);
 
         return view('cashier.sessions.show', [
             'session'       => $session,
@@ -750,8 +743,8 @@ class CashierController extends Controller
 
             $method = strtolower($validated['paymentMethod']);
             $subTotal = $session->subtotal();
-            $taxAmount = $this->roundUp($subTotal * ($this->taxRate() / 100));
-            $total = $this->roundUp($subTotal + $taxAmount);
+            $taxAmount = round($subTotal * ($this->taxRate() / 100), 2);
+            $total = round($subTotal + $taxAmount, 2);
 
             if ($method === 'cash' && (float) $validated['cashReceived'] < $total) {
                 return 'insufficient';
@@ -831,8 +824,8 @@ class CashierController extends Controller
         $groupedOrders = $orders->groupBy('order_code');
 
         $subTotal = $session->subtotal();
-        $taxAmount = $this->roundUp($subTotal * ($this->taxRate() / 100));
-        $total = $this->roundUp($subTotal + $taxAmount);
+        $taxAmount = round($subTotal * ($this->taxRate() / 100), 2);
+        $total = round($subTotal + $taxAmount, 2);
 
         return view('cashier.sessions.bill', [
             'session'       => $session,
